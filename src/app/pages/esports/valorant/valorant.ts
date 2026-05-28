@@ -75,19 +75,19 @@ export class Valorant implements OnInit, OnDestroy {
       name: 'TenZ',
       role: 'Duelista',
       desc: 'Mecánicas inigualables. Elevó el techo de habilidad desde la beta.',
-      image: '/Imagenes-esports/tenz.jpg'
+      image: 'Imagenes-esports/tenz.jpg'
     },
     {
       name: 'Boaster',
       role: 'IGL',
       desc: 'La mente maestra de FNATIC. Estrategia pura y carisma.',
-      image: '/Imagenes-esports/boaster.jpg'
+      image: 'Imagenes-esports/boaster.jpg'
     },
     {
       name: 'aspas',
       role: 'Duelista',
       desc: 'El terror de Brasil. MVP constante y campeón del mundo con LOUD.',
-      image: '/Imagenes-esports/aspas.webp'
+      image: 'Imagenes-esports/aspas.webp'
     }
   ];
 

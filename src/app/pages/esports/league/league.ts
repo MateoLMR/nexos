@@ -43,19 +43,19 @@ export class League implements OnInit, AfterViewInit, OnDestroy {
       name: 'Faker',
       role: 'Midlaner',
       desc: 'El "Rey Demonio Inmortal". Cuatro veces campeón del mundo y el jugador más icónico en la historia de League of Legends.',
-      image: '/Imagenes-esports/faker.jpeg'
+      image: 'Imagenes-esports/faker.jpeg'
     },
     {
       name: 'Uzi',
       role: 'ADC',
       desc: 'La leyenda de China. Conocido por sus mecánicas perfectas y por ser el tirador más temido durante años en la LPL.',
-      image: '/Imagenes-esports/uzi.jpg'
+      image: 'Imagenes-esports/uzi.jpg'
     },
     {
       name: 'Caps',
       role: 'Midlaner',
       desc: '"Baby Faker". El mejor jugador europeo de la historia, llevó a la región a ganar su primer MSI y a múltiples finales mundiales.',
-      image: '/Imagenes-esports/caps.jpg'
+      image: 'Imagenes-esports/caps.jpg'
     },
   ];
 

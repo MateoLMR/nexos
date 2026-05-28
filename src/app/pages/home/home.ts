@@ -184,7 +184,7 @@ export class Home implements AfterViewInit, OnDestroy {
 
     const script = document.createElement('script');
     // 2. Cargar el script externo que contiene la clase NexosLanyards y su funcionalidad
-    script.src = '/JS/Animacion_credencial.js';
+    script.src = 'JS/Animacion_credencial.js';
 
     script.onload = () => {
       if ((window as any).NexosLanyards) {

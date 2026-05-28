@@ -85,7 +85,7 @@ export class Esports implements OnInit, AfterViewInit, OnDestroy {
       glow: 'rgba(200,155,60,0.55)',
       ruta: '/esports/league',
       tag: 'MOBA',
-      imagen: '/Imagenes-esports/League-of-Legends-logo.png'
+      imagen: 'Imagenes-esports/League-of-Legends-logo.png'
     },
     {
       id: 'cs2',
@@ -96,7 +96,7 @@ export class Esports implements OnInit, AfterViewInit, OnDestroy {
       glow: 'rgba(75,63,168,0.55)',
       ruta: '/esports/counter',
       tag: 'FPS',
-      imagen: '/Logos-Juegos/CSGO.png'
+      imagen: 'Logos-Juegos/CSGO.png'
     },
     {
       id: 'dota2',
@@ -107,7 +107,7 @@ export class Esports implements OnInit, AfterViewInit, OnDestroy {
       glow: 'rgba(139,0,0,0.55)',
       ruta: '/esports/dota',
       tag: 'MOBA',
-      imagen: '/Imagenes-esports/Dota2.png'
+      imagen: 'Imagenes-esports/Dota2.png'
     },
     {
       id: 'valorant',
@@ -118,7 +118,7 @@ export class Esports implements OnInit, AfterViewInit, OnDestroy {
       glow: 'rgba(255,70,85,0.55)',
       ruta: '/esports/valorant',
       tag: 'FPS',
-      imagen: '/Imagenes-esports/valorant.png'
+      imagen: 'Imagenes-esports/valorant.png'
     },
   ];
 

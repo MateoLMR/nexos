@@ -43,19 +43,19 @@ export class Dota implements OnInit, AfterViewInit, OnDestroy {
       name: 'Miracle-',
       role: 'Mid / Carry',
       desc: 'El primer jugador en alcanzar los 9000 MMR. Famoso por sus jugadas imposibles con Invoker y su capacidad de ganar partidas solo.',
-      image: '/Imagenes-esports/miracle.jpg'
+      image: 'Imagenes-esports/miracle.jpg'
     },
     {
       name: 'Puppey',
       role: 'Support / Captain',
       desc: 'Leyenda absoluta de Team Secret. Ha estado presente en casi todos los The International, ganando el primero de la historia.',
-      image: '/Imagenes-esports/puppey.jpg'
+      image: 'Imagenes-esports/puppey.jpg'
     },
     {
       name: 'N0tail',
       role: 'Support / Captain',
       desc: 'Fundador de OG y el primer bicampeón consecutivo de TI. Su mentalidad positiva revolucionó el liderazgo en los esports.',
-      image: '/Imagenes-esports/n0tail.jpg'
+      image: 'Imagenes-esports/n0tail.jpg'
     },
   ];
 

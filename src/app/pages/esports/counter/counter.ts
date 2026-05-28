@@ -39,9 +39,9 @@ export class Counter implements OnInit, AfterViewInit, OnDestroy {
   stats = { lanzamiento: '2012', mundial: 'CS Major Championship' };
 
   legends: Legend[] = [
-    { name: 's1mple', role: 'Rifler / AWPer', desc: 'Considerado el mejor jugador de la historia. Dominio absoluto con cualquier arma.', image: '/Imagenes-esports/s1mple.png' },
-    { name: 'ZywOo', role: 'AWPer', desc: 'El genio francés. Consistencia sobrehumana temporada tras temporada con Vitality.', image: '/Imagenes-esports/zywOo.jpg' },
-    { name: 'NiKo', role: 'Entry Fragger', desc: 'Mecánicas de otro nivel. El clutch player más famoso de la escena europea.', image: '/Imagenes-esports/niko{.jpg' },
+    { name: 's1mple', role: 'Rifler / AWPer', desc: 'Considerado el mejor jugador de la historia. Dominio absoluto con cualquier arma.', image: 'Imagenes-esports/s1mple.png' },
+    { name: 'ZywOo', role: 'AWPer', desc: 'El genio francés. Consistencia sobrehumana temporada tras temporada con Vitality.', image: 'Imagenes-esports/zywOo.jpg' },
+    { name: 'NiKo', role: 'Entry Fragger', desc: 'Mecánicas de otro nivel. El clutch player más famoso de la escena europea.', image: 'Imagenes-esports/niko{.jpg' },
   ];
 
   historySteps: HistoryStep[] = [
