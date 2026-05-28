@@ -1,0 +1,287 @@
+<!-- Este es el componente home tiene el llamado a home.ts y el diseño con tailwind de toda la pagina -->
+<div class="overflow-x-hidden bg-gray-900">
+  <div class="relative isolate overflow-hidden pt-40 pb-24 sm:pt-85 sm:pb-40">
+    <div class="mx-auto max-w-7xl px-6 lg:px-8">
+      <div class="flex flex-col items-center text-center">
+        <h1 class="text-4xl font-bold tracking-tight text-white sm:text-8xl mb-5">
+          Bienvenido a <span class="text-fuchsia-300">Nexos</span>
+        </h1>
+        <p class="text-2xl sm:text-4xl font-semibold text-fuchsia-300 min-h-[80px]">
+          Aquí puedes <span id="Escritura" class="border-r-4 border-fuchsia-500 pr-1"></span>
+        </p>
+      </div>
+    </div>
+    <div
+      class="mt-75 w-full overflow-hidden [mask-image:_linear-gradient(to_right,transparent_0,_black_128px,_black_calc(100%-128px),transparent_100%)]">
+      <div class="logo-track">
+        <div class="logo-group">
+          <img src="/Logos-Juegos/Overwatch.png" width="64" height="64" loading="lazy"
+            class="h-16 w-auto brightness-0 invert opacity-70 hover:opacity-100 transition-all" alt="Overwatch">
+          <img src="/Logos-Juegos/Warcraft.png" width="64" height="64" loading="lazy"
+            class="h-16 w-auto brightness-0 invert opacity-70 hover:opacity-100 transition-all" alt="Warcraft">
+          <img src="/Logos-Juegos/Assasin.png" width="64" height="64" loading="lazy"
+            class="h-16 w-auto brightness-0 invert opacity-70 hover:opacity-100 transition-all" alt="Assassin's Creed">
+          <img src="/Logos-Juegos/lol.png" width="64" height="64" loading="lazy"
+            class="h-16 w-auto brightness-0 invert opacity-70 hover:opacity-100 transition-all" alt="League of Legends">
+          <img src="/Logos-Juegos/Gta.png" width="64" height="64" loading="lazy"
+            class="h-16 w-auto brightness-0 invert opacity-70 hover:opacity-100 transition-all" alt="GTA">
+          <img src="/Logos-Juegos/Rainbow.png" width="64" height="64" loading="lazy"
+            class="h-16 w-auto brightness-0 invert opacity-70 hover:opacity-100 transition-all" alt="Rainbow Six">
+          <img src="/Logos-Juegos/Carlitosduty.png" width="64" height="64" loading="lazy"
+            class="h-16 w-auto brightness-0 invert opacity-70 hover:opacity-100 transition-all" alt="Call of Duty">
+          <img src="/Logos-Juegos/ark.png" width="64" height="64" loading="lazy"
+            class="h-16 w-auto brightness-0 invert opacity-70 hover:opacity-100 transition-all" alt="ARK">
+          <img src="/Logos-Juegos/CSGO.png" width="64" height="64" loading="lazy"
+            class="h-16 w-auto brightness-0 invert opacity-70 hover:opacity-100 transition-all" alt="CS:GO">
+        </div>
+      </div>
+    </div>
+
+    <!-- El div de las cards de recomendados la funcionalidad esta en home.ts el diseño es con tailwind -->
+    <div class="bg-gray-900 pt-16 pb-0 sm:pt-10">
+      <div class="relative isolate overflow-hidden bg-amber-50 py-16 sm:py-24">
+        <div class="mx-auto max-w-7xl px-10 lg:px-8">
+          <div class="flex flex-col lg:flex-row items-center justify-between gap-16">
+
+            <div class="max-w-xl text-left lg:w-1/2">
+              <h2 class="text-4xl font-extrabold tracking-tight text-fuchsia-900 sm:text-6xl">
+                Recomendados de la semana
+              </h2>
+              <p class="mt-6 text-2xl leading-9 text-fuchsia-900 opacity-90">
+                Una exploracion a los juegos descubiertos por la comunidad esta semana.
+              </p>
+              <div class="mt-6 flex items-center gap-x-5">
+                <p class="text-xl text-fuchsia-600/80 text-sm italic">
+                  Dale clic a las tarjetas para explorarlos →
+                </p>
+              </div>
+            </div>
+
+            <div class="relative h-[600px] w-full max-w-md lg:w-1/2 flex items-center justify-center"
+              id="card-swap-wrapper">
+
+              <article
+                class="card-item absolute inset-0 transition-all duration-500 ease-in-out cursor-pointer isolate flex flex-col justify-end overflow-hidden rounded-3xl bg-gray-800 px-8 pb-10 pt-80 shadow-2xl"
+                data-index="0">
+                <img src="Imagenes/grime2.png" class="absolute inset-0 -z-10 h-full w-full object-cover" />
+                <div class="absolute inset-0 -z-10 bg-gradient-to-t from-black/100 via-gray-900/60">
+                </div>
+                <time class="text-sm text-white opacity-100 uppercase tracking-widest">Marzo
+                  31, 2026</time>
+                <h3 class="mt-3 text-4xl font-bold text-white">
+                  GRIME II
+                </h3>
+                <p class="mt-5 text-lg text-white/100 leading-relaxed">Es un videojuego de acción y
+                  aventura de estilo metroidvania con una atmósfera surrealista. Explora un mundo
+                  alienígena oscuro y hostil, enfrentándote a criaturas grotescas y desafiantes
+                  mientras descubres los secretos de este entorno misterioso. </p>
+
+                <!-- Asi es como se llama la pagina del juego que este al darle clic en ver detalles con a routrerlink -->
+                <a [routerLink]="['/juego', juegoTarjeta1?.id]" *ngIf="juegoTarjeta1"
+                  class="mt-6 inline-block px-7 py-2 bg-purple-950 hover:bg-purple-700/70 text-white rounded-2xl transition-colors w-max cursor-pointer relative z-50">
+                  Ver Detalles
+                </a>
+              </article>
+
+              <article
+                class="card-item absolute inset-0 transition-all duration-500 ease-in-out cursor-pointer isolate flex flex-col justify-end overflow-hidden rounded-3xl bg-gray-800 px-8 pb-10 pt-80 shadow-2xl opacity-0"
+                data-index="1">
+                <img src="Imagenes/hozy.png" class="absolute inset-0 -z-10 h-full w-full object-cover" />
+                <div class="absolute inset-0 -z-10 bg-gradient-to-t from-black/100 via-gray-900/60">
+                </div>
+                <time class="text-sm text-white opacity-100 uppercase tracking-widest">Marzo 30,
+                  2026</time>
+                <h3 class="mt-3 text-4xl font-bold text-white">
+                  Hozy
+                </h3>
+                <p class="mt-5 text-lg text-white/100 leading-relaxed">Es un simulador de relajación
+                  y
+                  decoración "cozy" donde restauras un vecindario olvidado habitación por
+                  habitación.
+                  El juego se centra en limpiar, pintar y amueblar casas abandonadas.mediante
+                  mecánicas físicas satisfactorias, sin temporizadores ni presiones</p>
+
+                <a [routerLink]="['/juego', juegoTarjeta2?.id]"
+                  class="mt-6 inline-block px-7 py-2 bg-purple-950 hover:bg-purple-700/70 text-white rounded-2xl transition-colors w-max cursor-pointer">
+                  Ver Detalles
+                </a>
+              </article>
+
+              <article
+                class="card-item absolute inset-0 transition-all duration-500 ease-in-out cursor-pointer isolate flex flex-col justify-end overflow-hidden rounded-3xl bg-gray-800 px-8 pb-10 pt-80 shadow-2xl opacity-0"
+                data-index="2">
+                <img src="Imagenes/monsterhunter.png" class="absolute inset-0 -z-10 h-full w-full object-cover" />
+                <div class="absolute inset-0 -z-10 bg-gradient-to-t from-black/100 via-gray-900/60">
+                </div>
+                <time class="text-sm text-white opacity-100 uppercase tracking-widest">Marzo 12,
+                  2026</time>
+                <h3 class="mt-3 text-4xl font-bold text-white">
+                  Monster Hunter Stories 3: Twisted
+                  Reflection
+                </h3>
+                <p class="mt-5 text-lg text-white/100 leading-relaxed">Es la tercera entrega de la
+                  serie
+                  RPG spin-off de Monster Hunter. En este título, asumes el papel de un "Monster
+                  Rider" que forma vínculos con monstruos en lugar de cazarlos.</p>
+
+                <a [routerLink]="['/juego', juegoTarjeta3?.id]"
+                  class="mt-6 inline-block px-7 py-2 bg-purple-950 hover:bg-purple-700/70 text-white rounded-2xl transition-colors w-max cursor-pointer">
+                  Ver Detalles
+                </a>
+              </article>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Seccion de los torneos es simple solo tiene un par de animaciones basicas con GSAP y el diseño con tailwind -->
+  <section class="bg-gray-900 pb-25 px-50">
+    <div class="mx-auto max-w-8xl">
+      <div class="mb-16 text-center">
+        <h2 class="text-6xl font-bold text-white tracking-tight italic">NEXOS <span
+            class="text-fuchsia-300">eSPORTS</span></h2>
+        <p class="mt-4 text-2xl text-gray-400">Sigue la huella digital de los torneos más grandes del mundo.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+        <div
+          class="group relative overflow-hidden rounded-xl bg-black h-96 border border-white/10 cursor-pointer transition-all duration-300 hover:-translate-y-3 hover:shadow-[0_20px_50px_rgba(255,70,85,0.3)]">
+          <div
+            class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none"
+            style="background-image: radial-gradient(#ff4655 1px, transparent 1px); background-size: 20px 20px;">
+          </div>
+          <img src="Imagenes/valocup.png"
+            class="absolute inset-0 h-full w-full object-cover opacity-50 group-hover:scale-110 transition-transform duration-700" />
+          <div class="relative z-20 h-full flex flex-col justify-end p-8 bg-gradient-to-t from-black via-transparent">
+            <span
+              class="inline-block w-fit px-3 py-1 rounded-full bg-red-600 text-[10px] font-bold text-white mb-3">PRÓXIMAMENTE</span>
+            <h3 class="text-3xl font-black text-white uppercase tracking-tighter">Champions Tour -
+              Shanghái
+            </h3>
+            <p class="text-gray-300 text-base">24 de septiembre al 18 de octubre de 2026.</p>
+          </div>
+          <a href="https://valorantesports.com/es-MX/news/first-look-at-valorant-champions-tour-2026-"
+            class="absolute inset-0 z-20"></a>
+        </div>
+
+        <div
+          class="group relative overflow-hidden rounded-xl bg-black h-96 border border-white/10 cursor-pointer transition-all duration-300 hover:-translate-y-3 hover:shadow-[0_20px_50px_rgba(0,207,239,0.3)]">
+          <div
+            class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none"
+            style="background-image: radial-gradient(#00cfef 1px, transparent 1px); background-size: 15px 15px;">
+          </div>
+          <img src="Imagenes/lolworldcup.png"
+            class="absolute inset-0 h-full w-full object-cover opacity-50 group-hover:scale-110 transition-transform duration-700" />
+          <div class="relative z-20 h-full flex flex-col justify-end p-8 bg-gradient-to-t from-black via-transparent">
+            <span
+              class="inline-block w-fit px-3 py-1 rounded-full bg-blue-600 text-[10px] font-bold text-white mb-3">PRÓXIMAMENTE</span>
+            <h3 class="text-3xl font-black text-white uppercase tracking-tighter">lol Worlds 2026 -
+              Estados
+              Unidos</h3>
+            <p class="text-gray-300 text-base">Octubre - Noviembre 2026.</p>
+          </div>
+          <a href="https://lolesports.com/es-MX/" class="absolute inset-0 z-20"></a>
+        </div>
+
+        <div
+          class="group relative overflow-hidden rounded-xl bg-black h-96 border border-white/10 cursor-pointer transition-all duration-300 hover:-translate-y-3 hover:shadow-[0_20px_50px_rgba(252,163,17,0.3)]">
+          <div
+            class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none"
+            style="background-image: radial-gradient(#fca311 1px, transparent 1px); background-size: 25px 25px;">
+          </div>
+          <img src="Imagenes/cs2cup.png"
+            class="absolute inset-0 h-full w-full object-cover opacity-50 group-hover:scale-110 transition-transform duration-700" />
+          <div class="relative z-20 h-full flex flex-col justify-end p-8 bg-gradient-to-t from-black via-transparent">
+            <span
+              class="inline-block w-fit px-3 py-1 rounded-full bg-orange-500 text-[10px] font-bold text-white mb-3">PRÓXIMAMENTE</span>
+            <h3 class="text-3xl font-black text-white uppercase tracking-tighter">CS2 IEM Cologne -
+              Alemania
+            </h3>
+            <p class="text-gray-300 text-base">2 al 21 de junio de 2026.</p>
+          </div>
+          <a href="https://esportsworldcup.com/en/competitions/2026/cs2" class="absolute inset-0 z-20"></a>
+        </div>
+
+        <div
+          class="group relative overflow-hidden rounded-xl bg-black h-96 border border-white/10 cursor-pointer transition-all duration-300 hover:-translate-y-3 hover:shadow-[0_20px_50px_rgba(239,0,219,0.3)]">
+          <div
+            class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none"
+            style="background-image: radial-gradient(#ef00db 1px, transparent 1px); background-size: 15px 15px;">
+          </div>
+          <img src="Imagenes/dota2cup.png"
+            class="absolute inset-0 h-full w-full object-cover opacity-50 group-hover:scale-110 transition-transform duration-700" />
+          <div class="relative z-20 h-full flex flex-col justify-end p-8 bg-gradient-to-t from-black via-transparent">
+            <span
+              class="inline-block w-fit px-3 py-1 rounded-full bg-fuchsia-600 text-[10px] font-bold text-white mb-3">PRÓXIMAMENTE</span>
+            <h3 class="text-3xl font-black text-white uppercase tracking-tighter">dota 2 World Cup -
+              Riyadh
+            </h3>
+            <p class="text-gray-300 text-base">7 al 18 de julio de 2026.</p>
+          </div>
+          <a href="https://esportsworldcup.com/en/competitions/2026/dota2" class="absolute inset-0 z-20"></a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Las credenciales del equipo estan divididas entre el css de home y una carpeta js en public para la funcionalidad con algunas cosas en el home.ts -->
+  <!-- Esta section es para que se vea osea carguen las credenciales y el diseño de lo demas -->
+  <section class="nexos-lanyards-section" aria-label="Equipo Nexos">
+    <div class="nexos-bg-glow"></div>
+
+    <div class="nexos-lanyards-header">
+      <span class="eyebrow">Conoce al equipo detras de nexos</span>
+      <h2>Los creadores de <span>Nexos</span></h2>
+    </div>
+
+    <div
+      class="flex items-center gap-4 p-2 border border-white/5 rounded-xl bg-[#06060e]/50 max-w-sm mx-auto mt-2 mb-5">
+      <svg class="h-10 w-8 shrink-0 mt-1" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="handGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        <path d="M16 40V12C16 10.8954 16.8954 10 18 10C19.1046 10 20 10.8954 20 12V24" stroke="#475569" stroke-width="2"
+          stroke-linecap="round" />
+        <path d="M20 24V14C20 12.8954 20.8954 12 22 12C23.1046 12 24 12.8954 24 14V24" stroke="#475569" stroke-width="2"
+          stroke-linecap="round" />
+        <path d="M24 24V16C24 14.8954 24.8954 14 26 14C27.1046 14 28 14.8954 28 16V28" stroke="#475569" stroke-width="2"
+          stroke-linecap="round" />
+        <path d="M28 28V20C28 18.8954 28.8954 18 30 18C31.1046 18 32 18.8954 32 20V32" stroke="#475569" stroke-width="2"
+          stroke-linecap="round" />
+
+        <path d="M16 32V42H36V28C36 26.3431 34.6569 25 33 25" stroke="#475569" stroke-width="2"
+          stroke-linecap="round" />
+
+        <path d="M16 28L8 22C6.5 21 6.5 19 8 18" stroke="#7C3AED" stroke-width="2.5" stroke-linecap="round" />
+
+        <g filter="url(#handGlow)">
+          <path d="M16 12V32" stroke="#0EA5E9" stroke-width="3" stroke-linecap="round" />
+        </g>
+      </svg>
+
+      <div class="flex flex-col">
+        <p class="text-gray-300 font-semibold tracking-tight text-x">
+          <span class="text-purple-400 font-bold uppercase tracking-wider text-xl block mb-1">Interacción:</span>
+          Arrastra para interactuar con las credenciales del equipo.
+        </p>
+      </div>
+    </div>
+
+    <!-- Aqui se llama el canvas de las credenciales del equipo con la funcionalidad de arrastrar y rotar con el mouse esta en el js de public y el diseño con tailwind -->
+    <canvas id="nexos-lanyard-canvas"></canvas>
+
+  </section>
+
+</div>

@@ -1,0 +1,24 @@
+<div class="perfil-container" *ngIf="profileData">
+
+  <!-- FOTO -->
+  <img
+    [src]="profileData.photo"
+    class="perfil-foto"
+  >
+
+  <!-- NOMBRE -->
+  <h1 class="perfil-nombre">
+    {{ profileData.name }}
+  </h1>
+
+  <!-- EMAIL -->
+  <p class="perfil-email">
+    {{ profileData.email }}
+  </p>
+
+  <!-- BIO -->
+  <div class="perfil-bio">
+    {{ profileData.bio }}
+  </div>
+
+</div>

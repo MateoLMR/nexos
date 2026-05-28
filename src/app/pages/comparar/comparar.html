@@ -1,0 +1,359 @@
+<div class="bg-gray-900 overflow-x-hidden min-h-screen">
+  <main class="mx-auto max-w-6xl px-6 lg:px-8 py-20">
+
+    <!-- Encabezado -->
+    <div class="text-center mb-14">
+      <p style="font-family:'JetBrains Mono',monospace; letter-spacing:4px; color:#f0abfc;
+                text-transform:uppercase; font-size:13px; margin-bottom:12px;">
+        Análisis de Nexos
+      </p>
+      <h1 class="text-5xl lg:text-6xl font-black text-white mb-4">
+        Comparar <span style="background:linear-gradient(to right,#d946ef,#a855f7);
+                              -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
+          Juegos
+        </span>
+      </h1>
+      <p class="text-gray-400 text-lg">Enfrenta dos juegos y descubre cuál se adapta mejor a ti.</p>
+    </div>
+
+    <!-- Selectores -->
+    <div style="display:flex; align-items:center; gap:16px; margin-bottom:40px; flex-wrap:wrap; justify-content:center;">
+
+      <div style="flex:1; min-width:220px; max-width:320px;">
+        <label style="display:block; color:#c4b5fd; font-size:12px; font-weight:700;
+                      letter-spacing:2px; text-transform:uppercase; margin-bottom:8px;">
+          Juego 1
+        </label>
+        <select [(ngModel)]="seleccionA"
+                style="width:100%; padding:12px 16px; border-radius:12px;
+                       background:#1e1b2e; color:#fff; border:1px solid rgba(168,85,247,0.4);
+                       font-size:15px; outline:none; cursor:pointer; appearance:none;
+                       background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 fill=%22%23a855f7%22 viewBox=%220 0 24 24%22><path d=%22M7 10l5 5 5-5z%22/></svg>');
+                       background-repeat:no-repeat; background-position:right 12px center;">
+          <option value="" disabled>Selecciona un juego</option>
+          <option *ngFor="let id of juegosIds" [value]="id">{{ juegosNombres[id] }}</option>
+        </select>
+      </div>
+
+      <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding-top:20px;">
+        <div style="width:56px; height:56px; border-radius:50%;
+                    background:linear-gradient(135deg,#7c3aed,#d946ef);
+                    display:flex; align-items:center; justify-content:center;
+                    font-weight:900; font-size:16px; color:#fff;
+                    box-shadow:0 0 24px rgba(217,70,239,0.4);">
+          VS
+        </div>
+      </div>
+
+      <div style="flex:1; min-width:220px; max-width:320px;">
+        <label style="display:block; color:#c4b5fd; font-size:12px; font-weight:700;
+                      letter-spacing:2px; text-transform:uppercase; margin-bottom:8px;">
+          Juego 2
+        </label>
+        <select [(ngModel)]="seleccionB"
+                style="width:100%; padding:12px 16px; border-radius:12px;
+                       background:#1e1b2e; color:#fff; border:1px solid rgba(168,85,247,0.4);
+                       font-size:15px; outline:none; cursor:pointer; appearance:none;
+                       background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 fill=%22%23a855f7%22 viewBox=%220 0 24 24%22><path d=%22M7 10l5 5 5-5z%22/></svg>');
+                       background-repeat:no-repeat; background-position:right 12px center;">
+          <option value="" disabled>Selecciona un juego</option>
+          <option *ngFor="let id of juegosIds" [value]="id">{{ juegosNombres[id] }}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Botón comparar -->
+    <div style="text-align:center; margin-bottom:48px;">
+      <button (click)="comparar()"
+              style="padding:14px 48px; border-radius:9999px; font-weight:800; font-size:16px;
+                     color:#fff; border:none; cursor:pointer;
+                     background:linear-gradient(to right,#7c3aed,#d946ef);
+                     box-shadow:0 0 24px rgba(217,70,239,0.35);
+                     transition:transform 0.2s, box-shadow 0.2s;"
+              onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 0 36px rgba(217,70,239,0.55)'"
+              onmouseout="this.style.transform=''; this.style.boxShadow='0 0 24px rgba(217,70,239,0.35)'">
+        ⚡ Comparar ahora
+      </button>
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="error" style="text-align:center; color:#f0abfc; margin-bottom:24px;
+                               background:rgba(217,70,239,0.1); border:1px solid rgba(217,70,239,0.3);
+                               border-radius:12px; padding:12px 24px;">
+      ⚠️ {{ error }}
+    </div>
+
+    <!-- Mensaje inicial -->
+    <div *ngIf="!mostrandoComparacion && !error" style="text-align:center; color:#6b7280; font-size:15px;">
+      Selecciona dos juegos para empezar la comparación.
+    </div>
+
+    <!-- RESULTADO -->
+    <div *ngIf="mostrandoComparacion && juegoA && juegoB">
+
+      <!-- Cabecera de juegos con botón Ver detalles -->
+      <div style="display:grid; grid-template-columns:1fr auto 1fr; gap:16px;
+                  align-items:stretch; margin-bottom:32px;">
+
+        <!-- Juego A -->
+        <div style="border-radius:16px; overflow:hidden; border:2px solid rgba(168,85,247,0.3);
+                    background:#0f0b1b; position:relative; display:flex; flex-direction:column;">
+          <div style="position:relative; flex:1;">
+            <img [src]="juegoA.imagen" [alt]="juegoA.titulo"
+                 style="width:100%; aspect-ratio:16/9; object-fit:cover; display:block;" />
+            <div style="position:absolute; inset:0; background:linear-gradient(to top,rgba(15,11,27,0.95) 0%,transparent 50%);"></div>
+            <div style="position:absolute; bottom:0; left:0; right:0; padding:16px;">
+              <p style="color:#c4b5fd; font-size:11px; font-weight:700; letter-spacing:2px;
+                        text-transform:uppercase; margin:0 0 4px;">{{ juegoA.genero }}</p>
+              <p style="color:#fff; font-size:20px; font-weight:900; margin:0; line-height:1.2;">{{ juegoA.titulo }}</p>
+            </div>
+          </div>
+          <!-- Botón Ver detalles juego A -->
+          <div style="padding:12px 16px; border-top:1px solid rgba(168,85,247,0.15);">
+            <a [routerLink]="['/juego', seleccionA]"
+               style="display:flex; align-items:center; justify-content:center; gap:6px;
+                      padding:10px; border-radius:10px; text-decoration:none; font-weight:700;
+                      font-size:13px; color:#a78bfa; border:1px solid rgba(168,85,247,0.3);
+                      background:rgba(124,58,237,0.1); transition:background 0.2s, color 0.2s;"
+               onmouseover="this.style.background='rgba(124,58,237,0.25)'; this.style.color='#fff'"
+               onmouseout="this.style.background='rgba(124,58,237,0.1)'; this.style.color='#a78bfa'">
+              Ver detalles
+              <svg style="width:14px; height:14px;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Separador central -->
+        <div style="display:flex; align-items:center; justify-content:center; padding:0 8px;">
+          <div style="width:2px; background:linear-gradient(to bottom,transparent,#7c3aed,#d946ef,transparent);
+                      height:100%; min-height:120px;"></div>
+        </div>
+
+        <!-- Juego B -->
+        <div style="border-radius:16px; overflow:hidden; border:2px solid rgba(217,70,239,0.3);
+                    background:#0f0b1b; position:relative; display:flex; flex-direction:column;">
+          <div style="position:relative; flex:1;">
+            <img [src]="juegoB.imagen" [alt]="juegoB.titulo"
+                 style="width:100%; aspect-ratio:16/9; object-fit:cover; display:block;" />
+            <div style="position:absolute; inset:0; background:linear-gradient(to top,rgba(15,11,27,0.95) 0%,transparent 50%);"></div>
+            <div style="position:absolute; bottom:0; left:0; right:0; padding:16px; text-align:right;">
+              <p style="color:#f0abfc; font-size:11px; font-weight:700; letter-spacing:2px;
+                        text-transform:uppercase; margin:0 0 4px;">{{ juegoB.genero }}</p>
+              <p style="color:#fff; font-size:20px; font-weight:900; margin:0; line-height:1.2;">{{ juegoB.titulo }}</p>
+            </div>
+          </div>
+          <!-- Botón Ver detalles juego B -->
+          <div style="padding:12px 16px; border-top:1px solid rgba(217,70,239,0.15);">
+            <a [routerLink]="['/juego', seleccionB]"
+               style="display:flex; align-items:center; justify-content:center; gap:6px;
+                      padding:10px; border-radius:10px; text-decoration:none; font-weight:700;
+                      font-size:13px; color:#f0abfc; border:1px solid rgba(217,70,239,0.3);
+                      background:rgba(217,70,239,0.1); transition:background 0.2s, color 0.2s;"
+               onmouseover="this.style.background='rgba(217,70,239,0.25)'; this.style.color='#fff'"
+               onmouseout="this.style.background='rgba(217,70,239,0.1)'; this.style.color='#f0abfc'">
+              Ver detalles
+              <svg style="width:14px; height:14px;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- BARRAS DUALES DE RATINGS -->
+      <div style="background:#0f0b1b; border-radius:20px; border:1px solid rgba(255,255,255,0.07);
+                  padding:32px; margin-bottom:28px;">
+
+        <h2 style="color:#fff; font-size:22px; font-weight:800; margin:0 0 28px;
+                   border-left:3px solid #d946ef; padding-left:12px;">
+          Valoración Nexos
+        </h2>
+
+        <div style="display:flex; gap:24px; margin-bottom:24px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="width:14px; height:14px; border-radius:3px;
+                        background:linear-gradient(to right,#7c3aed,#a855f7);"></div>
+            <span style="color:#c4b5fd; font-size:13px; font-weight:600;">{{ juegoA.titulo }}</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="width:14px; height:14px; border-radius:3px;
+                        background:linear-gradient(to right,#d946ef,#f472b6);"></div>
+            <span style="color:#f0abfc; font-size:13px; font-weight:600;">{{ juegoB.titulo }}</span>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:20px;">
+          <div *ngFor="let r of ratingsComparados; let i = index; trackBy: trackByIndex">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="color:#e2e8f0; font-weight:600; font-size:14px;">{{ r.label }}</span>
+              <div style="display:flex; align-items:center; gap:12px;">
+                <span style="color:#a78bfa; font-weight:800; font-size:15px;">{{ r.valorA }}</span>
+                <span *ngIf="r.ganador !== 'empate'"
+                      style="padding:2px 10px; border-radius:9999px; font-size:11px; font-weight:700;"
+                      [style.background]="r.ganador === 'a' ? 'rgba(124,58,237,0.3)' : 'rgba(217,70,239,0.3)'"
+                      [style.color]="r.ganador === 'a' ? '#a78bfa' : '#f0abfc'">
+                  {{ r.ganador === 'a' ? '▲ ' + juegoA.titulo : '▲ ' + juegoB.titulo }}
+                </span>
+                <span *ngIf="r.ganador === 'empate'"
+                      style="padding:2px 10px; border-radius:9999px; font-size:11px; font-weight:700;
+                             background:rgba(107,114,128,0.3); color:#9ca3af;">
+                  Empate
+                </span>
+                <span style="color:#f472b6; font-weight:800; font-size:15px;">{{ r.valorB }}</span>
+              </div>
+            </div>
+            <div style="width:100%; height:10px; border-radius:9999px;
+                        background:rgba(255,255,255,0.06); overflow:hidden; margin-bottom:4px;">
+              <div [style.width.%]="r.anchoA"
+                   style="height:100%; border-radius:9999px;
+                          background:linear-gradient(to right,#7c3aed,#a855f7);
+                          transition: width 0.85s cubic-bezier(0.4,0,0.2,1);">
+              </div>
+            </div>
+            <div style="width:100%; height:10px; border-radius:9999px;
+                        background:rgba(255,255,255,0.06); overflow:hidden;">
+              <div [style.width.%]="r.anchoB"
+                   style="height:100%; border-radius:9999px;
+                          background:linear-gradient(to right,#d946ef,#f472b6);
+                          transition: width 0.85s cubic-bezier(0.4,0,0.2,1) 0.1s;">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROMEDIO Y VEREDICTO -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:28px;">
+        <div style="background:#0f0b1b; border-radius:16px; padding:24px; text-align:center;
+                    border:2px solid rgba(124,58,237,0.4);">
+          <p style="color:#a78bfa; font-size:12px; font-weight:700; letter-spacing:2px;
+                    text-transform:uppercase; margin:0 0 8px;">{{ juegoA.titulo }}</p>
+          <p style="color:#fff; font-size:48px; font-weight:900; margin:0; line-height:1;">{{ promedioA }}</p>
+          <p style="color:#6b7280; font-size:12px; margin:4px 0 12px;">Promedio Nexos</p>
+          <div style="width:100%; height:8px; border-radius:9999px; background:rgba(255,255,255,0.06); overflow:hidden;">
+            <div [style.width.%]="anchoPromedioA"
+                 style="height:100%; background:linear-gradient(to right,#7c3aed,#a855f7);
+                        transition: width 0.9s cubic-bezier(0.4,0,0.2,1) 0.2s;">
+            </div>
+          </div>
+        </div>
+        <div style="background:#0f0b1b; border-radius:16px; padding:24px; text-align:center;
+                    border:2px solid rgba(217,70,239,0.4);">
+          <p style="color:#f0abfc; font-size:12px; font-weight:700; letter-spacing:2px;
+                    text-transform:uppercase; margin:0 0 8px;">{{ juegoB.titulo }}</p>
+          <p style="color:#fff; font-size:48px; font-weight:900; margin:0; line-height:1;">{{ promedioB }}</p>
+          <p style="color:#6b7280; font-size:12px; margin:4px 0 12px;">Promedio Nexos</p>
+          <div style="width:100%; height:8px; border-radius:9999px; background:rgba(255,255,255,0.06); overflow:hidden;">
+            <div [style.width.%]="anchoPromedioB"
+                 style="height:100%; background:linear-gradient(to right,#d946ef,#f472b6);
+                        transition: width 0.9s cubic-bezier(0.4,0,0.2,1) 0.3s;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Veredicto -->
+      <div style="background:#0f0b1b; border-radius:16px; padding:24px; text-align:center;
+                  border:1px solid rgba(255,255,255,0.07);">
+        <p style="color:#9ca3af; font-size:13px; font-weight:600; letter-spacing:2px;
+                  text-transform:uppercase; margin:0 0 12px;">⚡ Veredicto Nexos</p>
+        <div *ngIf="ganadorGlobal !== 'empate'">
+          <p style="color:#fff; font-size:24px; font-weight:900; margin:0 0 6px;">
+            🏆 {{ ganadorGlobal === 'a' ? juegoA.titulo : juegoB.titulo }}
+          </p>
+          <p style="color:#9ca3af; font-size:14px; margin:0;">
+            gana con un promedio de
+            <strong style="color:#f0abfc;">{{ ganadorGlobal === 'a' ? promedioA : promedioB }}</strong>
+            vs
+            <strong style="color:#a78bfa;">{{ ganadorGlobal === 'a' ? promedioB : promedioA }}</strong>
+          </p>
+        </div>
+        <div *ngIf="ganadorGlobal === 'empate'">
+          <p style="color:#fff; font-size:24px; font-weight:900; margin:0 0 6px;">🤝 ¡Empate!</p>
+          <p style="color:#9ca3af; font-size:14px; margin:0;">
+            Ambos juegos comparten un promedio de <strong style="color:#f0abfc;">{{ promedioA }}</strong>
+          </p>
+        </div>
+      </div>
+
+      <!-- Info rápida con botón Ver detalles -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px;">
+
+        <div style="background:#0f0b1b; border-radius:16px; padding:20px;
+                    border:1px solid rgba(255,255,255,0.07);">
+          <p style="color:#a78bfa; font-size:12px; font-weight:700; letter-spacing:2px;
+                    text-transform:uppercase; margin:0 0 12px;">{{ juegoA.titulo }}</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px;">
+            <div>
+              <p style="color:#6b7280; font-size:11px; margin:0 0 2px;">Género</p>
+              <p style="color:#e2e8f0; font-size:13px; font-weight:600; margin:0;">{{ juegoA.genero }}</p>
+            </div>
+            <div>
+              <p style="color:#6b7280; font-size:11px; margin:0 0 2px;">Lanzamiento</p>
+              <p style="color:#e2e8f0; font-size:13px; font-weight:600; margin:0;">{{ juegoA.lanzamiento }}</p>
+            </div>
+            <div>
+              <p style="color:#6b7280; font-size:11px; margin:0 0 2px;">Plataformas</p>
+              <p style="color:#e2e8f0; font-size:13px; font-weight:600; margin:0;">{{ juegoA.plataformas }}</p>
+            </div>
+            <div>
+              <p style="color:#6b7280; font-size:11px; margin:0 0 2px;">Desarrollador</p>
+              <p style="color:#e2e8f0; font-size:13px; font-weight:600; margin:0;">{{ juegoA.Creador }}</p>
+            </div>
+          </div>
+          <a [routerLink]="['/juego', seleccionA]"
+             style="display:flex; align-items:center; justify-content:center; gap:6px;
+                    padding:10px; border-radius:10px; text-decoration:none; font-weight:700;
+                    font-size:13px; color:#a78bfa; border:1px solid rgba(168,85,247,0.3);
+                    background:rgba(124,58,237,0.1); transition:background 0.2s, color 0.2s;"
+             onmouseover="this.style.background='rgba(124,58,237,0.25)'; this.style.color='#fff'"
+             onmouseout="this.style.background='rgba(124,58,237,0.1)'; this.style.color='#a78bfa'">
+            Ver página completa
+            <svg style="width:14px; height:14px;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+            </svg>
+          </a>
+        </div>
+
+        <div style="background:#0f0b1b; border-radius:16px; padding:20px;
+                    border:1px solid rgba(255,255,255,0.07);">
+          <p style="color:#f0abfc; font-size:12px; font-weight:700; letter-spacing:2px;
+                    text-transform:uppercase; margin:0 0 12px;">{{ juegoB.titulo }}</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px;">
+            <div>
+              <p style="color:#6b7280; font-size:11px; margin:0 0 2px;">Género</p>
+              <p style="color:#e2e8f0; font-size:13px; font-weight:600; margin:0;">{{ juegoB.genero }}</p>
+            </div>
+            <div>
+              <p style="color:#6b7280; font-size:11px; margin:0 0 2px;">Lanzamiento</p>
+              <p style="color:#e2e8f0; font-size:13px; font-weight:600; margin:0;">{{ juegoB.lanzamiento }}</p>
+            </div>
+            <div>
+              <p style="color:#6b7280; font-size:11px; margin:0 0 2px;">Plataformas</p>
+              <p style="color:#e2e8f0; font-size:13px; font-weight:600; margin:0;">{{ juegoB.plataformas }}</p>
+            </div>
+            <div>
+              <p style="color:#6b7280; font-size:11px; margin:0 0 2px;">Desarrollador</p>
+              <p style="color:#e2e8f0; font-size:13px; font-weight:600; margin:0;">{{ juegoB.Creador }}</p>
+            </div>
+          </div>
+          <a [routerLink]="['/juego', seleccionB]"
+             style="display:flex; align-items:center; justify-content:center; gap:6px;
+                    padding:10px; border-radius:10px; text-decoration:none; font-weight:700;
+                    font-size:13px; color:#f0abfc; border:1px solid rgba(217,70,239,0.3);
+                    background:rgba(217,70,239,0.1); transition:background 0.2s, color 0.2s;"
+             onmouseover="this.style.background='rgba(217,70,239,0.25)'; this.style.color='#fff'"
+             onmouseout="this.style.background='rgba(217,70,239,0.1)'; this.style.color='#f0abfc'">
+            Ver página completa
+            <svg style="width:14px; height:14px;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>

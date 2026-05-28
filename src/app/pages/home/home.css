@@ -1,0 +1,147 @@
+.nexos-lanyards-section {
+  position: relative;
+  width: 100%;
+  padding: 70px 0 60px;
+  /* Un azul casi negro que armoniza con tu paleta general */
+  background-color: #06060e;
+  overflow: hidden;
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* Brillo radial sutil para dar profundidad sin deslumbrar */
+.nexos-bg-glow {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 140%;
+  height: 100%;
+  background: radial-gradient(circle at 50% 30%, rgba(124, 58, 237, 0.08) 0%, transparent 60%);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* Encabezado de lanyards */
+.nexos-lanyards-header {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+}
+
+/* El texto de encabezado */
+.nexos-lanyards-header .eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  letter-spacing: 4px;
+  color: #f0abfc;
+  /* Púrpura de tu marca */
+  text-transform: uppercase;
+  margin-bottom: 0px;
+  display: block;
+}
+
+/* El título principal */
+.nexos-lanyards-header h2 {
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 900;
+  color: #fff;
+  margin: 0 0 30px;
+  letter-spacing: -0.03em;
+}
+
+/* El gradiente de texto para "Lanyards" */
+.nexos-lanyards-header h2 span {
+  /* Gradiente suave de azul a esmeralda */
+  background: linear-gradient(to right, #cf8ae4, #b910b9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+
+/* Indicador de interacción dinámico */
+.nexos-lanyards-hint {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 2px;
+}
+
+/* La barra de arrastre con animación sutil */
+.drag-indicator {
+  width: 1000px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* La barra animada que se desliza para indicar que se puede arrastrar */
+.drag-indicator::after {
+  content: '';
+  position: absolute;
+  width: 150px;
+  height: 100%;
+  background: #6d0ee9;
+  animation: slide-hint 2s ease-in-out infinite;
+}
+
+/* Animación para la barra de arrastre */
+@keyframes slide-hint {
+  0% {
+    left: -20%;
+  }
+
+  100% {
+    left: 110%;
+  }
+}
+
+/* El texto de la pista debajo de la barra */
+.nexos-lanyards-hint span {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* El lienzo de los lanyards con un tamaño fijo y un cursor de agarre */
+#nexos-lanyard-canvas {
+  display: block;
+  width: 100%;
+  height: 600px;
+  margin-top: -20px;
+  cursor: grab;
+}
+
+/* La pista de logotipos debajo del lienzo */
+.logo-track {
+  display: flex;
+  width: max-content;
+  animation: logoLoop 25s linear infinite;
+}
+
+/* Pausa la animación al pasar el mouse para que los usuarios puedan apreciar los logotipos */
+.logo-track:hover {
+  animation-play-state: paused;
+}
+
+/* El contenedor de los logotipos con espacio entre ellos */
+.logo-group {
+  display: flex;
+  gap: 4rem;
+  padding: 0 2rem;
+  flex-shrink: 0;
+}
+
+/* Animación para hacer que los logotipos se desplacen suavemente de derecha a izquierda */
+@keyframes logoLoop {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(var(--loop-offset, -100%));
+  }
+}

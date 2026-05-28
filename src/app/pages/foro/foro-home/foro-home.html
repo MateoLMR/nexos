@@ -1,0 +1,165 @@
+<div class="forum-page">
+
+  <section class="forum-hero">
+    <div class="hero-content">
+      <h1>Nexos Forum</h1>
+      <p>Discute, compara y descubre videojuegos junto a la comunidad.</p>
+    </div>
+  </section>
+
+  <section class="forum-container">
+
+    <aside class="forum-sidebar">
+      <div class="sidebar-card">
+        <h3>🔥 Tendencias</h3>
+        <ul>
+          <li># GTA VI</li>
+          <li># Valorant</li>
+          <li># Elden Ring</li>
+          <li># CS2</li>
+          <li># Marvel Rivals</li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <h3>🏆 Comunidad</h3>
+        <p>Comparte opiniones, descubre nuevos juegos y ayuda a otros jugadores.</p>
+      </div>
+    </aside>
+
+    <main class="forum-feed">
+
+      <div *ngIf="!user" class="login-card">
+        <h2>Inicia sesión</h2>
+        <p>Únete a la comunidad Nexos para publicar y comentar.</p>
+        <button
+          type="button"
+          (click)="login()"
+          [disabled]="loadingLogin"
+        >
+          {{ loadingLogin ? 'Cargando...' : 'Iniciar sesión con Google' }}
+        </button>
+      </div>
+
+      <div *ngIf="user" class="user-section">
+        <div class="user-info">
+          <img [src]="user.photoURL" alt="avatar">
+          <div>
+            <h3>{{ user.displayName }}</h3>
+            <span>Miembro Nexos</span>
+          </div>
+        </div>
+        <button type="button" class="logout-btn" (click)="logout()">
+          Cerrar sesión
+        </button>
+      </div>
+
+      <div *ngIf="user" class="create-post-card">
+        <h2>Crear publicación</h2>
+        <input
+          type="text"
+          placeholder="Título de la publicación"
+          [(ngModel)]="title"
+        >
+        <select [(ngModel)]="category">
+          <option value="General" class="bg-indigo-900">🎮 General</option>
+          <option value="Opiniones" class="bg-amber-500">🔥 Opiniones</option>
+          <option value="Competitivo" class="bg-fuchsia-900">⚔️ Competitivo</option>
+          <option value="Esports" class="bg-lime-950">🏆 Esports</option>
+          <option value="Ayuda" class="bg-indigo-300">🧠 Ayuda</option>
+          <option value="Recomendaciones" class="bg-pink-300">🎲 Recomendaciones</option>
+        </select>
+        <textarea
+          placeholder="Comparte tu opinión..."
+          [(ngModel)]="content"
+        ></textarea>
+        <button
+          type="button"
+          (click)="createPost()"
+          [disabled]="loadingPost"
+        >
+          {{ loadingPost ? 'Publicando...' : 'Publicar' }}
+        </button>
+      </div>
+
+      <div class="posts-section">
+        <h2>Publicaciones</h2>
+
+        <div class="post-card" *ngFor="let post of posts; trackBy: trackByPostId">
+
+          <div class="post-header">
+            <div class="post-user">
+              <div class="avatar">{{ post.userName?.charAt(0) }}</div>
+              <div>
+                <h3>{{ post.userName }}</h3>
+                <span>Jugador Nexos</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="post-content">
+            <div class="category-badge" [ngClass]="post.category">
+              {{ post.category }}
+            </div>
+            <h2>{{ post.title }}</h2>
+            <p>{{ post.content }}</p>
+          </div>
+
+          <div class="post-footer">
+            <button
+              class="action-btn"
+              [class.liked]="hasLiked(post)"
+              (click)="likePost(post.id)"
+              [disabled]="loadingLike[post.id] || hasLiked(post)"
+            >
+              {{ hasLiked(post) ? '❤️' : '🤍' }} {{ post.likes || 0 }}
+            </button>
+
+            <button type="button">
+              💬 {{ (comments[post.id]?.length) || 0 }}
+            </button>
+
+            <button type="button">🎮 Gaming</button>
+          </div>
+
+          <div class="comments-section">
+            <h4>Comentarios</h4>
+
+            <div class="comment" *ngFor="let comment of comments[post.id]; trackBy: trackByCommentId">
+              <img
+                *ngIf="comment.userPhoto"
+                [src]="comment.userPhoto"
+                class="comment-avatar"
+                alt="avatar"
+              >
+              <div class="avatar" *ngIf="!comment.userPhoto">
+                {{ comment.userName?.charAt(0) }}
+              </div>
+              <div>
+                <strong>{{ comment.userName }}</strong>
+                <p>{{ comment.text }}</p>
+              </div>
+            </div>
+
+            <div *ngIf="user" class="comment-form">
+              <input
+                type="text"
+                [(ngModel)]="commentInputs[post.id]"
+                placeholder="Escribe un comentario..."
+                (keyup.enter)="addComment(post.id)"
+              >
+              <button
+                type="button"
+                (click)="addComment(post.id)"
+                [disabled]="loadingComment[post.id]"
+              >
+                {{ loadingComment[post.id] ? '...' : 'Comentar' }}
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+  </section>
+</div>

@@ -1,0 +1,228 @@
+<!--Componente normal es la pagina base de todos los juegos se carga las animaicones de valoracion y demas, diseño del juego, etc. todo dividido en juego.ts y juego.css.
+La informacion del juego esta en la carpeta services con dos componentes inline-->
+<div class="bg-[#0f0b1b] overflow-x-hidden min-h-screen">
+
+  <!-- HERO con imagen de fondo y parallax -->
+  <section id="hero-juego">
+    <div #heroBg id="hero-bg" [style.backgroundImage]="heroBgStyle"></div>
+
+    <div id="hero-contenido" class="px-6 lg:px-8">
+      <div class="max-w-7xl mx-auto">
+        <div class="hero-badge">{{ juego?.genero }}</div>
+        <h1 id="hero-titulo-juego">{{ juego?.titulo ?? 'Juego no encontrado' }}</h1>
+
+        <div class="hero-meta" *ngIf="juego">
+          <span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            {{ juego.lanzamiento }}
+          </span>
+          <span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            {{ juego.plataformas }}
+          </span>
+          <span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            {{ juego.Creador }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="mx-auto max-w-7xl px-6 lg:px-1 py-10" *ngIf="juego; else noEncontrado">
+    <div class="flex flex-col lg:flex-row lg:gap-10">
+
+      <!-- COLUMNA IZQUIERDA: galería -->
+      <div class="w-full lg:w-[80%] mb-10 lg:mb-0">
+
+        <!-- Galería principal -->
+        <div id="main-media-container">
+          <button class="gallery-arrow gallery-arrow-left" (click)="navegarGaleria(-1)" aria-label="Anterior">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button class="gallery-arrow gallery-arrow-right" (click)="navegarGaleria(1)" aria-label="Siguiente">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+          <div class="media-counter">{{ contadorMedia }}</div>
+          <video *ngIf="mediaActual()?.tipo === 'video'" controls autoplay class="w-full h-full object-cover">
+            <source [src]="mediaActual()?.src" type="video/mp4" />
+            Tu navegador no soporta videos.
+          </video>
+          <img *ngIf="mediaActual()?.tipo === 'image'" [src]="mediaActual()?.src" alt="Contenido del juego"
+            class="w-full h-full object-cover cursor-pointer" (click)="abrirModal(mediaActual()!.src)" />
+        </div>
+
+        <!-- Miniaturas -->
+        <div id="miniaturas-container">
+          <button *ngFor="let item of juego.galeria; let i = index" (click)="seleccionarMedia(i)"
+            [class]="i === indexActual() ? 'activa' : ''">
+            <img [src]="item.thumb" [alt]="'Miniatura ' + (i+1)" />
+            <span *ngIf="item.tipo === 'video'" class="play-icon">▶</span>
+          </button>
+        </div>
+
+        <!-- Pros y Contras -->
+        <div class="mt-10">
+          <h2 class="seccion-titulo">Puntos clave</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+            <div class="rounded-xl bg-emerald-950/40 border border-emerald-500/20 p-5">
+              <h3 class="text-emerald-400 font-bold text-lg mb-4">✅ Lo mejor</h3>
+              <ul class="space-y-3">
+                <li *ngFor="let pro of juego.pros"
+                    class="flex items-start gap-2 text-gray-200 text-base leading-relaxed">
+                  <span class="text-emerald-400 mt-0.5 shrink-0">•</span>{{ pro }}
+                </li>
+              </ul>
+            </div>
+            <div class="rounded-xl bg-amber-950/40 border border-amber-500/20 p-5">
+              <h3 class="text-amber-400 font-bold text-lg mb-4">⚠️ A tener en cuenta</h3>
+              <ul class="space-y-3">
+                <li *ngFor="let contra of juego.contras"
+                    class="flex items-start gap-2 text-gray-200 text-base leading-relaxed">
+                  <span class="text-amber-400 mt-0.5 shrink-0">•</span>{{ contra }}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ratings con animación ─────────────────────────────────────────────────
+             ratingWidths[i] empieza en 0 y se actualiza a r.valor tras 80ms.
+             El transition CSS de 800ms anima el cambio de 0% → valor%.
+             Se usa trackBy para que Angular no destruya/recree los elementos
+             entre juegos, lo que mataría la transición.                         -->
+        <div class="mt-10">
+          <h2 class="seccion-titulo">Valoración Nexos</h2>
+          <div class="space-y-5 mt-4">
+            <div *ngFor="let r of juego.ratings; let i = index; trackBy: trackByIndex">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="color:#c4b5fd; font-weight:600; font-size:1rem;">{{ r.label }}</span>
+                <span style="color:#ffffff; font-weight:700; font-size:1rem;">{{ r.valor }}</span>
+              </div>
+              <div style="width:100%; height:12px; border-radius:9999px; background:rgba(255,255,255,0.08); overflow:hidden;">
+                <!-- ancho controlado por ratingWidths[i], no por r.valor directamente -->
+                <div [style.width.%]="ratingWidths[i] ?? 0"
+                     [style.background]="getRatingColor(r.valor)"
+                     style="height:100%; border-radius:9999px; transition: width 0.85s cubic-bezier(0.4, 0, 0.2, 1);">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- COLUMNA DERECHA: info + tiendas -->
+      <div class="w-full lg:w-[42%]">
+        <div class="space-y-8">
+
+          <!-- Información -->
+          <div>
+            <h2 class="seccion-titulo">Información</h2>
+            <div class="grid grid-cols-2 gap-4 text-lg">
+              <div>
+                <p class="text-purple-300/60 font-semibold mb-1">Género</p>
+                <p class="text-purple-100">{{ juego.genero }}</p>
+              </div>
+              <div>
+                <p class="text-purple-300/60 font-semibold mb-1">Lanzamiento</p>
+                <p class="text-purple-100">{{ juego.lanzamiento }}</p>
+              </div>
+              <div>
+                <p class="text-purple-300/60 font-semibold mb-1">Plataformas</p>
+                <p class="text-purple-100">{{ juego.plataformas }}</p>
+              </div>
+              <div>
+                <p class="text-purple-300/60 font-semibold mb-1">Desarrollador</p>
+                <p class="text-purple-100">{{ juego.Creador }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Descripción -->
+          <div>
+            <h2 class="seccion-titulo">Sobre el juego</h2>
+            <p class="text-gray-300 leading-relaxed text-xl">{{ juego.descripcionLarga }}</p>
+          </div>
+
+          <!-- Tiendas -->
+          <div>
+            <h2 class="seccion-titulo">Comprar juego</h2>
+            <div class="flex flex-col gap-3">
+              <a *ngFor="let tienda of juego.tiendas"
+                 [href]="tienda.url" target="_blank" rel="noopener"
+                 class="flex items-center justify-between px-5 py-3 rounded-xl border
+                        transition-all duration-200 hover:scale-[1.02] hover:brightness-110 cursor-pointer no-underline"
+                 [ngClass]="getTiendaClases(tienda.nombre)">
+                <span class="font-bold text-base">{{ tienda.nombre }}</span>
+                <span class="font-black text-lg">{{ tienda.precio }}</span>
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Relacionados -->
+    <div class="mt-16" *ngIf="relacionados.length > 0">
+      <h2 class="seccion-titulo">Juegos que también te pueden gustar</h2>
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 mt-4">
+        <a *ngFor="let rel of relacionados"
+           [routerLink]="['/juego', rel.id]"
+           style="display:block; border-radius:12px; overflow:hidden;
+                  border:1px solid rgba(255,255,255,0.1); text-decoration:none;
+                  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+                  cursor:pointer;"
+           onmouseover="this.style.transform='translateY(-4px)'; this.style.borderColor='rgba(217,70,239,0.5)'; this.style.boxShadow='0 8px 30px rgba(88,28,135,0.35)'"
+           onmouseout="this.style.transform=''; this.style.borderColor='rgba(255,255,255,0.1)'; this.style.boxShadow=''">
+          <div [style.backgroundImage]="'url(' + rel.imagen + ')'"
+               style="width:100%; padding-top:65%; background-size:cover;
+                      background-position:center; background-repeat:no-repeat;">
+          </div>
+          <p style="color:#fff; font-weight:600; font-size:0.875rem;
+                    padding:8px 12px; margin:0; line-height:1.3;">
+            {{ rel.titulo }}
+          </p>
+        </a>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- No encontrado -->
+  <ng-template #noEncontrado>
+    <div class="flex flex-col items-center justify-center py-40 text-center">
+      <p class="text-4xl text-fuchsia-400 mb-4">😕 Juego no encontrado</p>
+      <a routerLink="/juegos" class="text-purple-300 hover:text-fuchsia-300 underline text-lg">Volver al catálogo</a>
+    </div>
+  </ng-template>
+
+  <!-- Modal imagen ampliada -->
+  <div *ngIf="modalAbierto()" class="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]"
+    (click)="cerrarModal()">
+    <img [src]="modalSrc()" alt="Imagen ampliada del juego"
+      class="w-full h-full max-w-[80%] max-h-[85%] rounded-xl shadow-2xl cursor-pointer object-contain"
+      (click)="$event.stopPropagation()" />
+    <button class="absolute top-5 right-6 text-white text-4xl font-light hover:text-fuchsia-400 transition-colors"
+      (click)="cerrarModal()">
+      &times;
+    </button>
+  </div>
+
+</div>
