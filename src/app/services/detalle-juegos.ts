@@ -1,7 +1,8 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, map } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { rutaLocal } from '../shared/rutas';
 
 export interface Rating { label: string; valor: number; }
 export interface Tienda { nombre: string; precio: string; url: string; }
@@ -33,7 +34,14 @@ export class DetalleJuegosService {
 
   getPorId(id: string): Promise<DetalleJuego | undefined> {
     if (!this.cache.has(id)) {
-      const req = firstValueFrom(this.http.get<DetalleJuego>(`${this.api}/games/${encodeURIComponent(id)}`)).catch(
+      const detalle$ = this.http.get<DetalleJuego>(`${this.api}/games/${encodeURIComponent(id)}`).pipe(
+        map((j) => ({
+          ...j,
+          imagen: rutaLocal(j.imagen),
+          galeria: (j.galeria ?? []).map((m) => ({ ...m, src: rutaLocal(m.src), thumb: rutaLocal(m.thumb) })),
+        }))
+      );
+      const req = firstValueFrom(detalle$).catch(
         (error: HttpErrorResponse) => {
           this.cache.delete(id);
           // 404: el juego no existe → undefined (la página muestra su estado vacío)

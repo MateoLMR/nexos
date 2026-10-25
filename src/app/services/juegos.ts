@@ -1,7 +1,9 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { map } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { rutaLocal } from '../shared/rutas';
 
 export interface Juego {
   id: string;
@@ -20,7 +22,10 @@ export class JuegosService {
 
   getJuegos(): Promise<Juego[]> {
     if (!this.cache) {
-      this.cache = firstValueFrom(this.http.get<Juego[]>(`${this.api}/games`)).catch((error) => {
+      const juegos$ = this.http
+        .get<Juego[]>(`${this.api}/games`)
+        .pipe(map((lista) => lista.map((j) => ({ ...j, imagen: rutaLocal(j.imagen) }))));
+      this.cache = firstValueFrom(juegos$).catch((error) => {
         // Si falla, se borra la caché para reintentar la próxima vez
         this.cache = null;
         throw error;
