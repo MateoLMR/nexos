@@ -1,94 +1,46 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
-import {
-  Firestore,
-  collection,
-  addDoc,
-  getDocs,
-  serverTimestamp,
-  updateDoc,
-  doc,
-  increment,
-  arrayUnion,
-  arrayRemove,
-  getDoc
-} from '@angular/fire/firestore';
-//Aqui se importaron funciones de Firebase Auth
+export interface Post {
+  id: string;
+  title: string;
+  category: string;
+  content: string;
+  likes: number;
+  likedBy: string[];
+  createdAt: string;
+  userId: string;
+  userName: string;
+  userPhoto: string | null;
+}
 
-//El injectable sirve para poder usar este servicio en la app
+//Servicio del foro: habla con la API (que guarda en Neon). El autor sale del token, no se envía.
 @Injectable({
   providedIn: 'root'
 })
 export class ForumService {
+  private http = inject(HttpClient);
+  private api = environment.apiUrl;
 
-  //Conexion con la firestore
-  constructor(private firestore: Firestore) {}
+  //Obtener publicaciones (más recientes primero)
+  getPosts() {
+    return firstValueFrom(this.http.get<Post[]>(`${this.api}/posts`));
+  }
 
   //Crear publicación
-  async createPost(post: any) {
-
-    //Conexion a la coleccion posts
-    const postsRef = collection(this.firestore, 'posts');
-
-    //Guardar el post en firebase
-    return await addDoc(postsRef, {
-      //Guarda todos los datos necesarios que se piden en post (la coleccion)
-      ...post,
-      //Guarda con la fecha actual de la publicacion
-      createdAt: serverTimestamp()
-    });
+  createPost(post: { title: string; category: string; content: string }) {
+    return firstValueFrom(this.http.post<Post>(`${this.api}/posts`, post));
   }
 
-  //Obtener publicaciones
-  async getPosts() {
-
-    //Conexion a la coleccion posts
-    const postsRef = collection(this.firestore, 'posts');
-    //Obtiene el doc
-    const snapshot = await getDocs(postsRef);
-
-    //Convierte los tados en array
-    return snapshot.docs.map(doc => ({
-      //guarda el id del doc
-      id: doc.id,
-      //guarda los datos del post
-      ...doc.data()
-    }));
+  //Dar like (el servidor evita likes duplicados) → devuelve el total de likes
+  likePost(postId: string) {
+    return firstValueFrom(this.http.post<{ likes: number }>(`${this.api}/posts/${postId}/like`, {}));
   }
 
-  //Funcion para dar like a una publicacion
-  async likePost(
-    postId: string,
-    userId: string
-  ) {
-
-    //Conexion al doc
-    const postRef = doc(
-      this.firestore,
-      `posts/${postId}`
-    );
-
-    //Actualiza likes del post
-    //Primero obtiene los datos del post
-    const postSnap = await getDoc(postRef);
-    //Si el post no existe en la BD se detiene la busqueda
-    if (!postSnap.exists()) return;
-
-    //Verificacion de que usuario (mediante el id) le dio like para no dar like duplicado
-    const data: any = postSnap.data();
-    const likedBy = data['likedBy'] || [];
-    if (likedBy.includes(userId)) {
-      return;
-    }
-
-    //Si el usuario no le habia dado like entonces hace dos acciones;
-    // 1. da un like y 2. Se guarda en id del usuario en el arreglo de este doc para los likes registrando al usuario y verificando
-    //que este ya le dio like a esta publi
-    await updateDoc(postRef, {
-      likes: increment(1),
-      likedBy: [...likedBy, userId]
-    });
+  //Quitar like → devuelve el total de likes
+  unlikePost(postId: string) {
+    return firstValueFrom(this.http.delete<{ likes: number }>(`${this.api}/posts/${postId}/like`));
   }
-
-
 }

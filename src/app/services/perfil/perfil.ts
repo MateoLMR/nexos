@@ -1,55 +1,37 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
-import {
-  Firestore,
-  doc,
-  setDoc,
-  getDoc
-} from '@angular/fire/firestore';
+export interface Profile {
+  uid: string;
+  name: string;
+  email?: string; // solo viene en el perfil propio (POST /users/me)
+  photo: string | null;
+  bio: string;
+  createdAt: string;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class ProfileService {
+  private http = inject(HttpClient);
+  private api = environment.apiUrl;
 
-  constructor(private firestore: Firestore) {}
-
-  // 🔥 Crear perfil
-  async createProfile(user: any) {
-
-    const profileRef = doc(
-      this.firestore,
-      `profiles/${user.uid}`
-    );
-
-    const profileSnap = await getDoc(profileRef);
-
-    // Evita duplicados
-    if (profileSnap.exists()) return;
-
-    await setDoc(profileRef, {
-      uid: user.uid,
-      name: user.displayName,
-      email: user.email,
-      photo: user.photoURL,
-      bio: 'Jugador de Nexos 🎮',
-      createdAt: new Date()
-    });
-
+  // Crea el perfil del usuario logueado si no existe (o actualiza nombre y foto) y lo devuelve.
+  // Los datos salen del token de Firebase, por eso no se envía nada en el cuerpo.
+  createProfile() {
+    return firstValueFrom(this.http.post<Profile>(`${this.api}/users/me`, {}));
   }
 
-  // 📥 Obtener perfil
-  async getProfile(uid: string) {
-
-    const profileRef = doc(
-      this.firestore,
-      `profiles/${uid}`
-    );
-
-    const snapshot = await getDoc(profileRef);
-
-    return snapshot.data();
-
+  // Perfil público de cualquier usuario (sin email). undefined si no existe.
+  async getProfile(uid: string): Promise<Profile | undefined> {
+    try {
+      return await firstValueFrom(this.http.get<Profile>(`${this.api}/users/${encodeURIComponent(uid)}`));
+    } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status === 404) return undefined;
+      throw error;
+    }
   }
-
 }

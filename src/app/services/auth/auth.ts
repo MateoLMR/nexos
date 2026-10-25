@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { Auth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from '@angular/fire/auth';
-import { Firestore, doc, setDoc } from '@angular/fire/firestore';
 import { ProfileService } from '../perfil/perfil';
 //Aqui se importaron funciones de Firebase Auth
 //El injectable sirve para poder usar este servicio en la app
@@ -13,7 +12,6 @@ export class AuthService {
   //Se conecta a la firebase para poder autentificar
   constructor(
     private auth: Auth,
-    private firestore: Firestore,
     private ProfileService: ProfileService
   ) {}
 
@@ -36,7 +34,8 @@ export class AuthService {
 
     //Retorna los datos del usuario encontrado en la BD y los entrega a la pagina
     const user = result.user;
-    await this.ProfileService.createProfile(user);
+    //Crea (o actualiza) el perfil en la base de datos con los datos del token
+    await this.ProfileService.createProfile();
     return user;
 
   } catch (error) {
@@ -48,18 +47,6 @@ export class AuthService {
   //Solicitud de funcion de cerrar sesion del usuario desde el auth
   logout() {
     return signOut(this.auth);
-  }
-
-  //Guardar el nuevo usuario en la BD en la coleccion de users
-  async saveUser(user: any) {
-    const userRef = doc(this.firestore, `users/${user.uid}`);
-
-    //Espera a poner todos los datos del usuario
-    await setDoc(userRef, {
-      name: user.displayName,
-      email: user.email,
-      photo: user.photoURL
-    });
   }
 
   //Retorna el usuario

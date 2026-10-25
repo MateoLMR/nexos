@@ -1,71 +1,33 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
-import {
-  Firestore,
-  collection,
-  addDoc,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  serverTimestamp
-} from '@angular/fire/firestore';
-//Aqui se importaron funciones de Firebase Auth
+export interface PostComment {
+  id: string;
+  text: string;
+  createdAt: string;
+  postId: string;
+  userId: string;
+  userName: string;
+  userPhoto: string | null;
+}
 
-//El injectable sirve para poder usar este servicio en la app
+//Servicio de comentarios: habla con la API (que guarda en Neon)
 @Injectable({
   providedIn: 'root'
 })
-
 export class CommentsService {
+  private http = inject(HttpClient);
+  private api = environment.apiUrl;
 
-  //Conexion a la firestore
-  constructor(
-    private firestore: Firestore
-  ) {}
-
-  //Funcion de crear comentario
-  async createComment(comment: any) {
-    //Conexion a la coleccion de comments
-    const commentsRef =
-      collection(this.firestore, 'comments');
-
-    //Guarda el comentario en la firebase (para la coleccion)
-    return await addDoc(commentsRef, {
-      //Guarda datos enviados
-      ...comment,
-      //Se guarda con fecha automatica
-      createdAt: serverTimestamp()
-    });
-
+  //Crear comentario en un post (el autor sale del token)
+  createComment(postId: string, text: string) {
+    return firstValueFrom(this.http.post<PostComment>(`${this.api}/posts/${postId}/comments`, { text }));
   }
 
-  // Obtener los comentarios
-  async getComments(postId: string) {
-
-    //Conexion a la coleccion
-    const commentsRef =
-      collection(this.firestore, 'comments');
-
-    //Busca comentarios del post
-    const q = query(
-      commentsRef,
-      where('postId', '==', postId),
-      //Se ordenan por ascend en base a cuando se crearon
-      orderBy('createdAt', 'asc')
-    );
-
-    //Obtiene los comentarios
-    const snapshot = await getDocs(q);
-
-    //Convierte los datos en array
-    return snapshot.docs.map(doc => ({
-      //se guarda el id
-      id: doc.id,
-      //Se guardan todos los datos del comentario
-      ...doc.data()
-    }));
-
+  //Obtener los comentarios de un post, en orden de llegada
+  getComments(postId: string) {
+    return firstValueFrom(this.http.get<PostComment[]>(`${this.api}/posts/${postId}/comments`));
   }
-
 }
