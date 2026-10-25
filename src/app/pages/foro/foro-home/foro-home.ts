@@ -1,123 +1,116 @@
 import { Component, inject, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Auth, onAuthStateChanged, User } from '@angular/fire/auth';
 import { AuthService } from '../../../services/auth/auth';
-import { ForumService } from '../../../services/forum/forum';
-import { CommentsService } from '../../../services/forum/comments';
-//Se importaron auth del firestore, servicios como; el auth, foro, comentarios
+import { ForumService, Post } from '../../../services/forum/forum';
+import { CommentsService, PostComment } from '../../../services/forum/comments';
+import { MotionService } from '../../../shared/motion';
+import { Icono } from '../../../shared/icono';
 
+// Categorías del foro (mismos valores que ya se guardan en la base)
+export const CATEGORIAS = ['General', 'Opiniones', 'Competitivo', 'Esports', 'Ayuda', 'Recomendaciones'];
+
+// El tablero de mensajes del café: publicar, dar like, comentar, filtrar y ordenar.
 @Component({
   selector: 'app-foro-home',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule, RouterLink, Icono],
   templateUrl: './foro-home.html',
   styleUrl: './foro-home.css'
 })
-
 export class ForoHomeComponent implements OnInit, OnDestroy {
+  readonly categorias = CATEGORIAS;
 
-  //Aqui se guardaran los posts
-  posts: any[] = [];
-
-  //Aqui se guardaran los comentarios
-  comments: { [postId: string]: any[] } = {};
-
-  //Aqui se guardaran los nuevos comentarios
-  newComments: any = {};
-
-  //Aqui se guardan lo que se ponga en los comentarios
+  posts: Post[] = [];
+  comments: { [postId: string]: PostComment[] } = {};
   commentInputs: { [postId: string]: string } = {};
 
-  //Form de la publicacion osea como sera su estructura
-  title: string = '';
+  // Formulario de publicación
+  title = '';
+  category = 'General';
+  content = '';
 
-  category: string = 'General';
+  // Vista del tablero
+  filtro: string = 'todas';
+  orden: 'recientes' | 'queridas' = 'recientes';
+  abiertos = new Set<string>();
+  cargado = false;
+  errorCarga = false;
+  errorPublicar = '';
 
-  content: string = '';
-
-  //Loadings (pa verificar un error de que no cargaba)
   loadingPost = false;
-
   loadingLogin = false;
-
   loadingLike: { [key: string]: boolean } = {};
-
   loadingComment: { [key: string]: boolean } = {};
 
-  // conexion de la BD (solo los usuarios) and el ts
   auth = inject(Auth);
   private cdr = inject(ChangeDetectorRef);
-  private authUnsubscribe!: () => void;
+  private motion = inject(MotionService);
+  private authService = inject(AuthService);
+  private forumService = inject(ForumService);
+  private commentsService = inject(CommentsService);
+  private authUnsubscribe?: () => void;
+  private primeraCarga = true;
 
   user: User | null = null;
 
-  //Conexion para unir el ts con los servicios
-  constructor(
-    private authService: AuthService,
-    private forumService: ForumService,
-    private CommentsService: CommentsService
-  ) {}
-
-  //Funcion para iniciar apenas cargar
   ngOnInit() {
-    //Detectar usuario logeado
     this.authUnsubscribe = onAuthStateChanged(this.auth, async (user) => {
-      //Guarda el usuario actual (logeado)
       this.user = user;
-      //carga las publicaciones
       await this.loadPosts();
       this.cdr.markForCheck();
     });
   }
 
   ngOnDestroy() {
-    if (this.authUnsubscribe) {
-      this.authUnsubscribe();
-    }
+    this.authUnsubscribe?.();
   }
 
-  //Funcion pa cargar los posts
+  // ---------- datos ----------
   async loadPosts() {
     try {
-      //Trae los post desde la firebase (usando como puente el servicio de foro)
       const rawPosts = await this.forumService.getPosts();
-      console.log('🔥 POSTS:', rawPosts);
-
-      //Obtiene los comentarios de estas
-      const commentsResults = await Promise.all(
-        rawPosts.map(post => this.CommentsService.getComments(post.id))
-      );
-
-      const newComments: { [postId: string]: any[] } = {};
-      //Recorre todas las publicaciones
-      rawPosts.forEach((post, i) => {
-        //Guarda los comentarios del post
-        newComments[post.id] = commentsResults[i];
-      });
-
+      const commentsResults = await Promise.all(rawPosts.map((post) => this.commentsService.getComments(post.id)));
+      const newComments: { [postId: string]: PostComment[] } = {};
+      rawPosts.forEach((post, i) => (newComments[post.id] = commentsResults[i]));
       this.posts = [...rawPosts];
       this.comments = { ...newComments };
-
-      this.cdr.markForCheck();
-
+      this.errorCarga = false;
     } catch (error) {
       console.error(error);
+      this.errorCarga = true;
+    }
+    this.cargado = true;
+    this.cdr.detectChanges();
+    if (this.primeraCarga) {
+      this.primeraCarga = false;
+      this.motion.entrar(document.querySelectorAll('.publicacion'), { y: 24, stagger: 0.06 });
     }
   }
 
-  //Funcion login
+  get visibles(): Post[] {
+    const lista = this.filtro === 'todas' ? this.posts : this.posts.filter((p) => p.category === this.filtro);
+    if (this.orden === 'queridas') return [...lista].sort((a, b) => (b.likes || 0) - (a.likes || 0));
+    return lista;
+  }
+
+  contarCategoria(c: string) {
+    return this.posts.filter((p) => p.category === c).length;
+  }
+
+  get totalComentarios() {
+    return Object.values(this.comments).reduce((s, l) => s + l.length, 0);
+  }
+
+  // ---------- sesión ----------
   async login() {
-    //esto es para comprobar un error con el doble click y que no carga con un click
     if (this.loadingLogin) return;
     this.loadingLogin = true;
     this.cdr.markForCheck();
-
     try {
-      //Login con google (con el servicio del auth)
       await this.authService.loginWithGoogle();
     } catch (error) {
-      //Para comprobar errores que se hayan dado en la consola
       console.error(error);
     } finally {
       this.loadingLogin = false;
@@ -125,78 +118,67 @@ export class ForoHomeComponent implements OnInit, OnDestroy {
     }
   }
 
-  //Funcion de cerrar sesion
   async logout() {
-    //Cerrar sesion (cerrando "conexion" con la firebase)
     await this.authService.logout();
   }
 
-  //Funcion de crear publicacion
+  // ---------- publicar ----------
   async createPost() {
-    //Evita crear posts vacios
-    if (!this.content.trim()) return;
-    //Evita el error de doble click
+    if (!this.content.trim()) {
+      this.errorPublicar = 'Escribe algo antes de publicar.';
+      return;
+    }
     if (this.loadingPost) return;
+    this.errorPublicar = '';
     this.loadingPost = true;
     this.cdr.markForCheck();
-
     try {
-      //Guarda la publicacion
-      await this.forumService.createPost({
-        title: this.title,
-        category: this.category,
-        content: this.content,
-        userName: this.user?.displayName || 'Usuario',
-        userPhoto: this.user?.photoURL || '',
-        userId: this.user?.uid || '',
-        likes: 0,
-        likedBy: []
-      });
-
-      // limpiar formulario
+      const nuevo = await this.forumService.createPost({ title: this.title, category: this.category, content: this.content });
       this.title = '';
       this.category = 'General';
       this.content = '';
-
-      // recargar posts
-      await this.loadPosts();
+      // La publicación nueva se pega arriba del tablero sin recargar todo
+      this.posts = [{ ...nuevo, likedBy: nuevo.likedBy ?? [] }, ...this.posts];
+      this.comments = { ...this.comments, [nuevo.id]: [] };
+      this.filtro = 'todas';
+      this.orden = 'recientes';
+      this.cdr.detectChanges();
+      this.pegarEnTablero(nuevo.id);
     } catch (error) {
       console.error(error);
+      this.errorPublicar = 'No se pudo publicar. Revisa tu conexión e intenta de nuevo.';
     } finally {
       this.loadingPost = false;
       this.cdr.markForCheck();
     }
   }
 
-  //Funcion like al post
-  async likePost(postId: string) {
-    //verifica usuario
-    if (!this.user) return;
-    //Evita el error de doble click
-    if (this.loadingLike[postId]) return;
+  // La publicación cae al tablero, se inclina y se asienta
+  private pegarEnTablero(id: string) {
+    const el = document.querySelector(`[data-post="${id}"]`);
+    if (!el || this.motion.reducido()) return;
+    this.motion.gsap.fromTo(el,
+      { y: -60, rotate: -4, opacity: 0, scale: 1.04 },
+      { y: 0, rotate: 0, opacity: 1, scale: 1, duration: 0.9, ease: 'back.out(1.7)', clearProps: 'transform' });
+  }
 
+  // ---------- like ----------
+  async likePost(postId: string, boton?: HTMLElement) {
+    if (!this.user || this.loadingLike[postId]) return;
     this.loadingLike = { ...this.loadingLike, [postId]: true };
-    this.cdr.markForCheck();
-
+    const uid = this.user.uid;
+    const post = this.posts.find((p) => p.id === postId);
+    const yaDioLike = post ? this.hasLiked(post) : false;
+    if (boton && !this.motion.reducido() && !yaDioLike) {
+      this.motion.gsap.fromTo(boton.querySelector('app-icono'), { scale: 0.6 }, { scale: 1, duration: 0.5, ease: 'back.out(3)' });
+    }
     try {
-      //Guarda like (usando el service de forum (la funcion likePost))
-      await this.forumService.likePost(postId, this.user.uid);
-
-      // actualizar solo el post en pantalla
-      this.posts = this.posts.map(p => {
+      const { likes } = yaDioLike ? await this.forumService.unlikePost(postId) : await this.forumService.likePost(postId);
+      this.posts = this.posts.map((p) => {
         if (p.id !== postId) return p;
-        const likedBy = Array.isArray(p.likedBy) ? p.likedBy : [];
-        if (likedBy.includes(this.user!.uid)) return p;
-        return {
-          ...p,
-          likes: (p.likes || 0) + 1,
-          likedBy: [...likedBy, this.user!.uid]
-        };
+        const likedBy: string[] = Array.isArray(p.likedBy) ? p.likedBy : [];
+        return { ...p, likes, likedBy: yaDioLike ? likedBy.filter((id) => id !== uid) : [...likedBy, uid] };
       });
-
-      //forzar un refresh visual
-      this.cdr.markForCheck();
-
     } catch (error) {
       console.error(error);
     } finally {
@@ -205,35 +187,32 @@ export class ForoHomeComponent implements OnInit, OnDestroy {
     }
   }
 
-  //funcion añadir comentario
-  async addComment(postId: string) {
-    //Evita que hayan comentarios vacios
-    if (!this.commentInputs[postId]?.trim()) return;
-    //Evita doble click
-    if (this.loadingComment[postId]) return;
+  hasLiked(post: Post): boolean {
+    return !!this.user && Array.isArray(post.likedBy) && post.likedBy.includes(this.user.uid);
+  }
 
+  // ---------- comentarios ----------
+  alternarComentarios(postId: string) {
+    if (this.abiertos.has(postId)) this.abiertos.delete(postId);
+    else this.abiertos.add(postId);
+    this.abiertos = new Set(this.abiertos);
+    this.cdr.detectChanges();
+    const lista = document.querySelector(`[data-comentarios="${postId}"]`);
+    if (lista && this.abiertos.has(postId)) this.motion.entrar(lista.querySelectorAll('.comentario, form'), { y: 10, stagger: 0.04 });
+  }
+
+  async addComment(postId: string) {
+    const texto = this.commentInputs[postId]?.trim();
+    if (!texto || this.loadingComment[postId]) return;
     this.loadingComment = { ...this.loadingComment, [postId]: true };
     this.cdr.markForCheck();
-
     try {
-      //Guarda comentario (con el servicio de comments)
-      await this.CommentsService.createComment({
-        postId: postId,
-        text: this.commentInputs[postId],
-        userName: this.user?.displayName || 'Usuario',
-        userPhoto: this.user?.photoURL || '',
-        userId: this.user?.uid || ''
-      });
-
-      // limpiar input (comentario)
+      const nuevo = await this.commentsService.createComment(postId, texto);
       this.commentInputs = { ...this.commentInputs, [postId]: '' };
-
-      // recargar comentarios
-      const updatedComments = await this.CommentsService.getComments(postId);
-      this.comments = { ...this.comments, [postId]: updatedComments };
-
-      this.cdr.markForCheck();
-
+      this.comments = { ...this.comments, [postId]: [...(this.comments[postId] ?? []), nuevo] };
+      this.cdr.detectChanges();
+      const ultimo = document.querySelector(`[data-comentarios="${postId}"] .comentario:last-of-type`);
+      if (ultimo) this.motion.entrar([ultimo], { x: -20 });
     } catch (error) {
       console.error(error);
     } finally {
@@ -242,16 +221,30 @@ export class ForoHomeComponent implements OnInit, OnDestroy {
     }
   }
 
-  hasLiked(post: any): boolean {
-    if (!this.user) return false;
-    return Array.isArray(post.likedBy) && post.likedBy.includes(this.user.uid);
+  // ---------- utilidades de presentación ----------
+  inicial(nombre?: string) {
+    return (nombre ?? '?').trim().charAt(0).toUpperCase();
   }
 
-  trackByPostId(_: number, post: any): string {
-    return post.id;
+  hace(fecha: string | undefined): string {
+    if (!fecha) return '';
+    const s = Math.max(0, (Date.now() - new Date(fecha).getTime()) / 1000);
+    if (s < 60) return 'hace un momento';
+    const m = Math.floor(s / 60);
+    if (m < 60) return `hace ${m} min`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `hace ${h} h`;
+    const d = Math.floor(h / 24);
+    if (d < 30) return d === 1 ? 'ayer' : `hace ${d} días`;
+    return new Date(fecha).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
-  trackByCommentId(_: number, comment: any): string {
-    return comment.id;
+  esReciente(fecha: string | undefined) {
+    return !!fecha && Date.now() - new Date(fecha).getTime() < 60 * 60 * 1000;
+  }
+
+  claseCategoria(c: string) {
+        if (c === 'Ayuda') return 'ficha-ambar';
+    return 'ficha-nexos';
   }
 }

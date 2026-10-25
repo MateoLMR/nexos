@@ -1,0 +1,32 @@
+/* Lado A = morado Nexos, lado B = ámbar del letrero */
+.lado-a { background: var(--color-nexos-claro); }
+.lado-b { background: var(--color-ambar); }
+.lado-a-texto { color: #c3adff; }
+.lado-b-texto { color: var(--color-ambar); }
+.punto { display: inline-block; width: 0.6rem; height: 0.6rem; border-radius: 2px; }
+
+.selector { appearance: none; cursor: pointer; }
+.selector option { background: var(--color-cubiculo); color: var(--color-monitor); }
+
+.cara-a { border-top: 3px solid var(--color-nexos-claro); }
+.cara-b { border-top: 3px solid var(--color-ambar); }
+.cara a { text-decoration: none; }
+.cara-velo { background: linear-gradient(to top, rgb(20 18 28 / 0.95) 5%, rgb(20 18 28 / 0.3) 60%, transparent); }
+
+.precio { background: var(--color-pared-2); border-color: rgb(255 176 32 / 0.4); }
+
+/* Barras enfrentadas: la de A crece hacia la izquierda, la de B hacia la derecha */
+.barra { height: 0.7rem; background: var(--color-pared-2); border-radius: 2px; overflow: hidden; }
+.barra-relleno { height: 100%; transform: scaleX(0); }
+.barra-a { background: var(--color-nexos-claro); transform-origin: right center; }
+.barra-b { background: var(--color-ambar); transform-origin: left center; }
+
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 4rem 1rem;
+  border: 1px dashed var(--color-cubiculo-2);
+  border-radius: var(--radius-cubiculo);
+}

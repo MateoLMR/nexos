@@ -1,518 +1,130 @@
-        /* Contenedor principal del hero del juego */
-        #hero-juego {
-          position: relative;
-          height: 520px;
-          overflow: hidden;
-          display: flex;
-          align-items: flex-end;
-        }
+/* ---------- portada ---------- */
+.hero {
+  position: relative;
+  min-height: clamp(26rem, 68vh, 40rem);
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  background: var(--color-pared-2);
+}
+.hero-vacio { min-height: 18rem; }
+.hero-arte {
+  position: absolute;
+  inset: -6% 0 auto 0;
+  width: 100%;
+  height: 112%;
+  object-fit: cover;
+  object-position: center 30%;
+  will-change: transform;
+}
+.hero-velo {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top, var(--color-pared) 2%, rgb(20 18 28 / 0.82) 32%, rgb(20 18 28 / 0.25) 70%, rgb(20 18 28 / 0.4) 100%),
+    linear-gradient(to right, rgb(20 18 28 / 0.7), transparent 60%);
+}
+.hero-texto { position: relative; z-index: 1; padding-bottom: 2.75rem; }
+.volver { text-decoration: none; }
 
-        /* Imagen de fondo del hero */
-        #hero-bg {
-          position: absolute;
-          inset: -60px 0;
-          /* margen extra arriba y abajo para el parallax */
-          background-size: cover;
-          background-position: center 0%;
-          background-repeat: no-repeat;
-          transition: background-image 0.4s ease;
-          will-change: background-position;
-        }
+/* ---------- galería ---------- */
+.media-principal {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
+.flecha {
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-cubiculo);
+  background: rgb(20 18 28 / 0.8);
+  border: 1px solid var(--color-cubiculo-2);
+  color: var(--color-monitor);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, background-color 0.2s;
+}
+.media-principal:hover .flecha, .flecha:focus-visible { opacity: 1; }
+.flecha:hover { background: var(--color-nexos); }
+.flecha-izq { left: 0.75rem; }
+.flecha-der { right: 0.75rem; }
+@media (hover: none) { .flecha { opacity: 1; } }
 
-        /* Gradiente oscuro sobre la imagen para que el texto se lea bien */
-        #hero-juego::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(to bottom,
-              rgba(15, 11, 27, 0.3) 0%,
-              rgba(15, 11, 27, 0.75) 60%,
-              rgba(15, 11, 27, 1) 100%);
-          z-index: 1;
-        }
+.miniaturas {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.4rem;
+  scrollbar-width: thin;
+}
+.miniatura {
+  position: relative;
+  flex: 0 0 auto;
+  width: 7.5rem;
+  aspect-ratio: 16 / 10;
+  border-radius: 3px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  opacity: 0.6;
+  cursor: pointer;
+  transition: opacity 0.2s, border-color 0.2s;
+}
+.miniatura:hover { opacity: 1; }
+.miniatura-activa { opacity: 1; border-color: var(--color-ambar); }
 
-        /* Contenido de texto del hero  */
-        #hero-contenido {
-          position: relative;
-          z-index: 5;
-          padding: 0 2rem 2.5rem;
-          width: 100%;
-          max-width: 1280px;
-          margin: 0 auto;
-        }
+/* ---------- medidores ---------- */
+.medidor-pista {
+  margin-top: 0.5rem;
+  height: 0.6rem;
+  background: var(--color-pared-2);
+  border: 1px solid var(--color-cubiculo-2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.medidor-relleno {
+  height: 100%;
+  background: var(--color-nexos-claro);
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+.medidor-bajo { background: var(--color-ambar); }
 
-        /* Badge de género del juego */
-        .hero-badge {
-          display: inline-block;
-          padding: 4px 14px;
-          border-radius: 9999px;
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 2px;
-          text-transform: uppercase;
-          background: rgba(168, 85, 247, 0.35);
-          border: 1px solid rgba(217, 70, 239, 0.4);
-          color: #f0abfc;
-          margin-bottom: 12px;
-        }
+/* ---------- tablero de precios ---------- */
+.tablero { background: var(--color-pared-2); border: 1px solid rgb(255 176 32 / 0.45); }
+.tienda {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px dashed rgb(255 176 32 / 0.22);
+  color: inherit;
+  text-decoration: none;
+}
+.fila-tienda:last-child .tienda { border-bottom: 0; }
+.tienda:hover .text-monitor { color: var(--color-ambar); }
 
-        /* Título principal del juego en el hero */
-        #hero-titulo-juego {
-          font-size: clamp(2.2rem, 5vw, 4rem);
-          font-weight: 900;
-          color: #fff;
-          line-height: 1.05;
-          letter-spacing: -0.02em;
-          text-shadow: 0 2px 20px rgba(0, 0, 0, 0.6);
-          margin-bottom: 15px;
-        }
+.relacionado { color: inherit; text-decoration: none; transition: border-color 0.25s, transform 0.35s var(--ease-salida); }
+.relacionado:hover { border-color: var(--color-ambar); transform: translateY(-4px); }
 
-        /* Subtítulo con lanzamiento y plataformas */
-        .hero-meta {
-          font-size: 20px;
-          color: rgba(216, 180, 254, 0.75);
-          display: flex;
-          gap: 16px;
-          flex-wrap: wrap;
-        }
+/* ---------- imagen ampliada ---------- */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: rgb(10 9 15 / 0.92);
+  animation: aparecer 0.25s var(--ease-salida);
+}
+@keyframes aparecer { from { opacity: 0; } }
 
-        /* Cada span dentro de hero-meta usa flexbox para alinear iconos y texto en línea */
-        .hero-meta span {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-        }
-
-        #main-media-container {
-          position: relative;
-          overflow: hidden;
-          aspect-ratio: 16/9;
-          border-radius: 14px;
-          background: #0d0920;
-          box-shadow: 0 8px 40px rgba(88, 28, 135, 0.35);
-          border: 1px solid rgba(168, 85, 247, 0.2);
-        }
-
-        /* El contenido del media (imagen o video) tiene fade de entrada */
-        #main-media-container img,
-        #main-media-container video {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          display: block;
-          animation: mediaFadeIn 0.35s ease both;
-        }
-
-        /* Animación de entrada del contenido de media con fade y zoom suave */
-        @keyframes mediaFadeIn {
-          /* Estado inicial: invisible y ligeramente ampliado */
-          from {
-            opacity: 0;
-            transform: scale(1.03);
-          }
-
-          /* Estado final: visible y en tamaño normal */
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-
-        /* Flechas de navegación de la galería */
-        .gallery-arrow {
-          position: absolute;
-          top: 50%;
-          transform: translateY(-50%);
-          z-index: 10;
-          width: 42px;
-          height: 42px;
-          border-radius: 50%;
-          background: rgba(15, 9, 32, 0.75);
-          border: 1px solid rgba(168, 85, 247, 0.4);
-          color: #d8b4fe;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s;
-          opacity: 0;
-          /* ocultas por defecto */
-          backdrop-filter: blur(4px);
-        }
-
-        /* Las flechas aparecen al hacer hover sobre el contenedor */
-        #main-media-container:hover .gallery-arrow {
-          opacity: 1;
-        }
-
-        /* Efecto hover para las flechas de navegación */
-        .gallery-arrow:hover {
-          background: rgba(168, 85, 247, 0.45);
-          border-color: #e879f9;
-          color: #fff;
-          transform: translateY(-50%) scale(1.1);
-        }
-
-        /* Posición de la flecha izquierda */
-        .gallery-arrow-left {
-          left: 12px;
-        }
-
-        /* Posición de la flecha derecha */
-        .gallery-arrow-right {
-          right: 12px;
-        }
-
-        /* Contador de media */
-        .media-counter {
-          position: absolute;
-          bottom: 10px;
-          right: 14px;
-          z-index: 10;
-          font-size: 13px;
-          font-weight: 600;
-          color: rgba(255, 255, 255, 0.6);
-          background: rgba(0, 0, 0, 0.45);
-          padding: 3px 10px;
-          border-radius: 9999px;
-          backdrop-filter: blur(4px);
-        }
-
-        /* Miniaturas de la galería */
-        #miniaturas-container {
-          display: flex;
-          gap: 12px;
-          margin-top: 10px;
-          overflow-x: auto;
-          padding-bottom: 4px;
-          scrollbar-width: thin;
-          scrollbar-color: rgba(168, 85, 247, 0.4) transparent;
-        }
-
-        /* Estilos de los botones de miniaturas */
-        #miniaturas-container button {
-          flex-shrink: 0;
-          width: 88px;
-          height: 54px;
-          border-radius: 8px;
-          overflow: hidden;
-          border: 2px solid transparent;
-          transition: border-color 0.2s, transform 0.2s;
-          position: relative;
-        }
-
-        /* Efecto hover en miniaturas — escala al pasar mouse */
-        #miniaturas-container button:hover {
-          transform: scale(1.05);
-        }
-
-        /* Estado activo de miniatura — borde púrpura */
-        #miniaturas-container button.activa {
-          border-color: #e879f9;
-        }
-
-        /* Texto del detalle del juego en color blanco */
-        #detalle-juego {
-          color: white;
-        }
-
-        /* Tarjetas de tiendas mejoradas */
-        .tienda-card {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 25px 16px;
-          background: rgba(31, 21, 55, 0.7);
-          border: 1px solid rgba(168, 85, 247, 0.2);
-          border-radius: 12px;
-          text-decoration: none;
-          transition: all 0.25s;
-          gap: 12px;
-        }
-
-        /* Efecto hover para mover ligeramente la tarjeta hacia la derecha */
-        .tienda-card:hover {
-          transform: translateX(4px);
-        }
-
-        /* Colores de hover por plataforma — se asignan desde JS */
-        .tienda-steam:hover {
-          border-color: #014a8a;
-          background: rgba(27, 158, 218, 0.12);
-        }
-
-/* Estilos de hover específicos para cada plataforma */
-        .tienda-xbox:hover {
-          border-color: #52b043;
-          background: rgba(82, 176, 67, 0.12);
-        }
-
-        .tienda-playstation:hover {
-          border-color: #1b9eda;
-          background: rgba(0, 112, 209, 0.12);
-        }
-
-        .tienda-gog:hover {
-          border-color: #c9541e;
-          background: rgba(201, 84, 30, 0.12);
-        }
-
-        .tienda-epic:hover {
-          border-color: #ffffff;
-          background: rgba(255, 255, 255, 0.06);
-        }
-
-        .tienda-battle:hover {
-          border-color: #00aeff;
-          background: rgba(0, 174, 255, 0.12);
-        }
-
-        .tienda-eneba:hover {
-          border-color: #6fdb6f;
-          background: rgba(111, 219, 111, 0.12);
-        }
-
-        .tienda-instant:hover {
-          border-color: #f97316;
-          background: rgba(249, 115, 22, 0.12);
-        }
-
-        .tienda-default:hover {
-          border-color: rgba(217, 70, 239, 0.6);
-          background: rgba(168, 85, 247, 0.12);
-        }
-
-        /* Estilo del texto dentro de la tarjeta de tienda */
-        .tienda-nombre {
-          font-weight: 700;
-          font-size: 18px;
-          color: #f3e8ff;
-        }
-
-        /* Estilo del precio en la tarjeta de tienda */
-        .tienda-precio {
-          font-weight: 800;
-          font-size: 18px;
-          color: #e879f9;
-          white-space: nowrap;
-        }
-
-        /* Estilo del icono y texto descriptivo en la tarjeta */
-        .tienda-icono {
-          font-size: 16px;
-          color: rgba(216, 180, 254, 0.5);
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-
-        /* Layout de pros y contras en dos columnas */
-        .pros-contras-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 20px;
-          margin-top: 8px;
-        }
-
-        /* En móviles, los bloques se apilan en una sola columna */
-        @media (max-width: 640px) {
-          .pros-contras-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-
-        .pros-col,
-        .contras-col {
-          border-radius: 14px;
-          padding: 20px;
-          opacity: 0;
-          /* empieza invisible, GSAP la anima */
-        }
-
-        /* Estilos para la columna de pros con fondo verde semi-transparente */
-        .pros-col {
-          background: rgba(16, 185, 129, 0.07);
-          border: 1px solid rgba(16, 185, 129, 0.25);
-        }
-
-        /* Estilos para la columna de contras con fondo rojo semi-transparente */
-        .contras-col {
-          background: rgba(239, 68, 68, 0.07);
-          border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-
-        /* Título de la sección de pros con color verde */
-        .pros-col h3 {
-          color: #34d399;
-          font-size: 16px;
-          font-weight: 700;
-          margin-bottom: 14px;
-        }
-
-        /* Título de la sección de contras con color rojo */
-        .contras-col h3 {
-          color: #f87171;
-          font-size: 16px;
-          font-weight: 700;
-          margin-bottom: 14px;
-        }
-
-        /* Estilos para los elementos de lista en pros y contras */
-        .pros-col li,
-        .contras-col li {
-          font-size: 17px;
-          line-height: 1.6;
-          padding: 6px 0;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-          display: flex;
-          gap: 8px;
-          align-items: flex-start;
-        }
-
-        /* Elimina el borde inferior del último elemento de lista */
-        .pros-col li:last-child,
-        .contras-col li:last-child {
-          border-bottom: none;
-        }
-
-        /* Contenedor de la sección de ratings */
-        .rating-seccion {
-          margin-top: 8px;
-        }
-
-        /* Fila individual de rating */
-        .rating-fila {
-          margin-bottom: 16px;
-        }
-
-        /* Etiqueta del rating con label y valor */
-        .rating-label {
-          display: flex;
-          justify-content: space-between;
-          font-size: 16px;
-          font-weight: 600;
-          color: rgba(216, 180, 254, 0.85);
-          margin-bottom: 6px;
-        }
-
-        /* Barra de fondo del rating */
-        .rating-pista {
-          height: 8px;
-          background: rgba(255, 255, 255, 0.07);
-          border-radius: 9999px;
-          overflow: hidden;
-        }
-
-        .rating-barra {
-          height: 100%;
-          border-radius: 9999px;
-          width: 0%;
-          /* empieza en 0, se anima hasta el valor real */
-          background: linear-gradient(90deg, #7c3aed, #e879f9);
-          transition: none;
-          /* GSAP controla la animación */
-        }
-
-        .relacionado-card {
-          position: relative;
-          border-radius: 14px;
-          overflow: hidden;
-          text-decoration: none;
-          border: 1px solid rgba(168, 85, 247, 0.18);
-          background: rgba(17, 12, 34, 0.9);
-          transition: border-color 0.3s, box-shadow 0.3s;
-          transform-style: preserve-3d;
-          will-change: transform;
-          display: block;
-          opacity: 0;
-          /* GSAP anima la entrada */
-        }
-
-        /* Efecto hover en la tarjeta relacionada */
-        .relacionado-card:hover {
-          border-color: rgba(217, 70, 239, 0.55);
-          box-shadow: 0 0 28px rgba(168, 85, 247, 0.25);
-        }
-
-        /* Imagen de la tarjeta relacionada */
-        .relacionado-card img {
-          width: 100%;
-          aspect-ratio: 16/9;
-          object-fit: cover;
-          display: block;
-          transition: transform 0.5s;
-        }
-
-        /* Zoom en la imagen al pasar el mouse */
-        .relacionado-card:hover img {
-          transform: scale(1.06);
-        }
-
-        /* Contenedor del cuerpo de la tarjeta */
-        .relacionado-card .rel-body {
-          padding: 12px 14px 14px;
-        }
-
-        /* Título de la tarjeta relacionada */
-        .relacionado-card .rel-titulo {
-          font-size: 18px;
-          font-weight: 700;
-          color: #f3e8ff;
-          margin-bottom: 3px;
-          transition: color 0.2s;
-        }
-
-        /* Color del título al pasar el mouse */
-        .relacionado-card:hover .rel-titulo {
-          color: #e879f9;
-        }
-
-        /* Género de la tarjeta relacionada */
-        .relacionado-card .rel-genero {
-          font-size: 14px;
-          color: rgba(167, 139, 250, 0.65);
-        }
-
-        /* Overlay de color en las relacionadas */
-        .relacionado-card .rel-overlay {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(180deg, transparent 40%, rgba(88, 28, 135, 0.6) 100%);
-          opacity: 0;
-          transition: opacity 0.3s;
-          pointer-events: none;
-        }
-
-        /* Muestra el overlay al pasar el mouse */
-        .relacionado-card:hover .rel-overlay {
-          opacity: 1;
-        }
-
-        /* Modal de imagen con efecto de desenfoque */
-        #image-modal {
-          backdrop-filter: blur(6px);
-        }
-
-        /* Divisores de sección */
-        .seccion-titulo {
-          font-size: 28px;
-          font-weight: 800;
-          color: #f3e8ff;
-          margin-bottom: 16px;
-          padding-bottom: 10px;
-          border-bottom: 1px solid rgba(168, 85, 247, 0.2);
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        /* Barra decorativa izquierda del título */
-        .seccion-titulo::before {
-          content: "";
-          display: block;
-          width: 4px; /* Ancho de la barra */
-          height: 22px; /* Alto de la barra */
-          border-radius: 2px; /* Bordes redondeados */
-          background: linear-gradient(180deg, #7c3aed, #e879f9); /* Gradiente morado */
-          flex-shrink: 0; /* No se encoge */
-        }
+@media (prefers-reduced-motion: reduce) {
+  .medidor-relleno { transition: none; }
+}

@@ -1,0 +1,198 @@
+:host { display: block; position: sticky; top: 0; z-index: 50; }
+
+/* Header integrado: mismo color de la pared, sin caja ni borde */
+.mostrador {
+  position: relative;
+  background: var(--color-pared);
+}
+/* Al bajar, el contenido se desvanece bajo el header en vez de cortarse con una línea */
+.mostrador::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 1.5rem;
+  background: linear-gradient(to bottom, var(--color-pared), transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.mostrador.bajo::after { opacity: 1; }
+
+.cable {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 10px;
+  height: 1px;
+  background: var(--color-cubiculo-2);
+  pointer-events: none;
+}
+
+/* ---------- enlaces colgados del cable ---------- */
+.riel { position: relative; align-self: stretch; }
+
+.enlace {
+  position: relative;
+  display: block;
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--radius-cubiculo);
+  color: var(--color-monitor-2);
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.enlace:hover, .enlace.activo { color: var(--color-monitor); }
+
+.riel .enlace {
+  display: flex;
+  align-items: center;
+  padding: 0.6rem 0.9rem 0;
+  border-radius: 0;
+}
+/* hilo corto que baja del cable */
+.riel .enlace::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  width: 1px;
+  height: 9px;
+  background: var(--color-cubiculo-2);
+}
+
+/* ---------- la lámpara ---------- */
+.lampara {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 11rem;
+  pointer-events: none;
+  transition:
+    transform 0.45s cubic-bezier(0.34, 1.3, 0.5, 1),
+    width 0.45s cubic-bezier(0.34, 1.3, 0.5, 1),
+    opacity 0.25s ease;
+}
+.lampara.sin-transicion { transition: none; }
+.lampara.apagada { opacity: 0; }
+/* pantalla de la lámpara */
+.lampara::before {
+  content: "";
+  position: absolute;
+  top: 17px;
+  left: 50%;
+  width: 26px;
+  height: 7px;
+  margin-left: -13px;
+  border-radius: 7px 7px 2px 2px;
+  background: var(--color-monitor);
+}
+/* cono de luz que se derrama hacia la página */
+.lampara::after {
+  content: "";
+  position: absolute;
+  top: 24px;
+  bottom: 0;
+  left: -30%;
+  right: -30%;
+  background: linear-gradient(to bottom, rgb(232 238 255 / 0.2), rgb(232 238 255 / 0.05) 45%, transparent);
+  clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%);
+  animation: zumbido 6s infinite;
+}
+/* el tubo parpadea muy de vez en cuando */
+@keyframes zumbido {
+  0%, 92%, 100% { opacity: 1; }
+  93% { opacity: 0.6; }
+  94% { opacity: 1; }
+  95% { opacity: 0.75; }
+}
+
+/* ---------- cartel "abierto" pegado con cinta ---------- */
+.cartel {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  rotate: -4deg;
+  transform-origin: 50% 0;
+  margin-top: 4px;
+}
+.cartel-tabla {
+  display: block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 3px;
+  background: var(--color-ambar);
+  color: #2e1d00;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+/* dos trozos de cinta en las esquinas */
+.cartel::before,
+.cartel::after {
+  content: "";
+  position: absolute;
+  top: -5px;
+  width: 22px;
+  height: 9px;
+  background: rgb(232 238 255 / 0.32);
+  border-inline: 1px dashed rgb(232 238 255 / 0.3);
+  z-index: 1;
+}
+.cartel::before { left: -8px; rotate: -32deg; }
+.cartel::after { right: -8px; rotate: 32deg; }
+.cartel-bandas { display: flex; flex-direction: column; align-items: center; width: 100%; gap: 2px; margin-top: 2px; }
+.cartel-bandas i { display: block; width: 100%; height: 3px; background: var(--color-ambar); opacity: 0.7; transform-origin: top; }
+.cartel-bandas i:nth-child(2) { width: 78%; opacity: 0.45; }
+
+@media (hover: hover) and (pointer: fine) {
+  .cartel:hover { animation: balanceo 1s cubic-bezier(0.36, 0, 0.3, 1); }
+  .cartel:hover .cartel-bandas i { animation: banda 0.9s ease-in-out; }
+  .cartel:hover .cartel-bandas i:nth-child(2) { animation-delay: 0.08s; }
+}
+@keyframes balanceo {
+  0% { rotate: -4deg; }
+  20% { rotate: 10deg; }
+  40% { rotate: -8deg; }
+  60% { rotate: 4deg; }
+  80% { rotate: -2deg; }
+  100% { rotate: -4deg; }
+}
+@keyframes banda {
+  0%, 100% { transform: skewX(0); }
+  30% { transform: skewX(-18deg); }
+  60% { transform: skewX(10deg); }
+}
+
+/* ---------- celular ---------- */
+.enlace-movil { padding: 0.75rem 0.25rem; font-size: 1.05rem; }
+.enlace-movil.activo::after {
+  content: "";
+  position: absolute;
+  left: 0.25rem;
+  bottom: 0.3rem;
+  width: 1.5rem;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--color-monitor);
+}
+
+.cubiculo-sesion {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.3rem 0.65rem 0.3rem 0.3rem;
+  border-radius: var(--radius-cubiculo);
+  border: 1px solid var(--color-cubiculo-2);
+  background: var(--color-pared-2);
+  text-decoration: none;
+  transition: border-color 0.2s;
+}
+.cubiculo-sesion:hover { border-color: var(--color-vivo); }
+
+@media (prefers-reduced-motion: reduce) {
+  .lampara { transition: opacity 0.2s ease; }
+  .lampara::after { animation: none; }
+}

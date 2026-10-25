@@ -1,211 +1,90 @@
-<div style="background:#06060e; min-height:100vh; overflow-x:hidden;
-            font-family:'JetBrains Mono',monospace; position:relative;">
-  <canvas #pixelCanvas style="position:fixed; inset:0; z-index:0; opacity:0.55; pointer-events:none;">
-  </canvas>
-  <!--  Glow radial decorativo sobre el canvas  -->
-  <div style="position:fixed; top:0; left:50%; transform:translateX(-50%);
-              width:800px; height:350px; pointer-events:none; z-index:1;
-              background:radial-gradient(ellipse at 50% 0%,
-                rgba(124,58,237,0.18) 0%, transparent 65%);">
-  </div>
+<div class="local pt-12 pb-10">
+  <header data-entra class="max-w-3xl">
+    <h1 class="letrero text-[clamp(2.75rem,6vw,4.75rem)] text-monitor">Cartelera de eSports</h1>
+    <p class="mt-4 text-lg text-monitor-2">Lo que se está jugando ahora, los torneos del año y la historia de los cuatro grandes.</p>
+  </header>
 
-  <!-- CONTENIDO PRINCIPAL -->
-  <main style="position:relative; z-index:2; max-width:1200px;
-               margin: 20px auto; padding:100px 24px 80px;">
-    <div style="margin-bottom:72px;">
-      <!-- Título principal — mantiene la tipografía del diseño anterior -->
-      <h1 style="font-size:clamp(3rem,8vw,6rem); color:#fff; font-weight:900;
-                 line-height:0.9; margin:0 0 24px; letter-spacing:-0.05em;
-                 text-transform:uppercase;">
-        Nexos<br>
-        <span style="background:linear-gradient(90deg,#d946ef,#7c3aed,#6366f1);
-                     -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
-          eSports
-        </span>
-      </h1>
-
-      <!-- Descripción con acento de borde izquierdo -->
-      <p style="color:#94a3b8; font-size:1.5em; line-height:1.7; max-width:560px;
-                font-family:ui-sans-serif,system-ui,sans-serif;
-                border-left:2px solid #7c3aed; padding-left:18px; margin:0;">
-        Explora la base de datos competitiva de Nexos. Torneos, historia y
-        partidos oficiales de los títulos más grandes del mundo.
-      </p>
+  <!-- ============ EN VIVO / PRÓXIMOS ============ -->
+  <section data-entra class="mt-10 cubiculo" aria-labelledby="titulo-vivo">
+    <div class="flex flex-wrap items-center justify-between gap-3 px-5 pt-5">
+      <h2 id="titulo-vivo" class="flex items-center gap-2.5 letrero text-2xl text-monitor">
+        @if (hayEnVivo()) { <span class="punto-vivo"></span> En vivo ahora } @else { Próximos partidos }
+      </h2>
+      <p class="text-sm text-monitor-2 flex items-center gap-2"><app-icono nombre="clock" [tam]="16" /> Se actualiza cada minuto</p>
     </div>
 
-    <div style="margin-bottom:64px;">
-
-      <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
-        <div style="width:36px; height:2px;
-                    background:linear-gradient(90deg,#d946ef,transparent);"></div>
-        <span style="color:#f0abfc; font-size:14px; font-weight:700;
-                     letter-spacing:5px; text-transform:uppercase;">
-          Eventos Próximos
-        </span>
-      </div>
-
-      <!-- Panel de la noticia activa -->
-      <div style="position:relative; overflow:hidden; border-radius:16px;
-                  border:1px solid rgba(255,255,255,0.07);
-                  background:rgba(255,255,255,0.02); backdrop-filter:blur(12px);">
-
-        <div *ngFor="let n of noticias; let i = index; trackBy: trackByIndex" style="padding:28px 32px; display:flex; align-items:center;
-                    justify-content:space-between; gap:20px; flex-wrap:wrap;
-                    transition:opacity 0.5s ease, transform 0.5s ease;"
-          [style.display]="noticiaActiva() === i ? 'flex' : 'none'">
-
-          <!-- Acento de color izquierdo del juego -->
-          <div style="position:absolute; left:0; top:0; bottom:0; width:3px;" [style.background]="n.color">
-          </div>
-
-          <!-- Info del evento -->
-          <div style="padding-left:12px;">
-            <!-- Badge de tipo -->
-            <span style="display:inline-block; padding:3px 12px; border-radius:9999px;
-                         font-size:10px; font-weight:700; letter-spacing:1.5px;
-                         text-transform:uppercase; margin-bottom:10px;" [style.background]="getBadgeColor(n.tipo)"
-              [style.color]="getBadgeText(n.tipo)">
-              {{ n.tipo }}
+    <div class="vivo-lista" aria-live="polite">
+      @if (partidos(); as lista) {
+        @for (p of lista; track p.id) {
+          <a [routerLink]="p.ruta" class="vivo-item">
+            <span class="flex items-center justify-between gap-2">
+              @if (p.enVivo) {
+                <span class="ficha ficha-vivo"><span class="punto-vivo"></span> en vivo</span>
+              } @else {
+                <span class="ficha ficha-tenue">{{ p.hora }}</span>
+              }
+              <span class="text-xs text-monitor-2">{{ p.juego }}</span>
             </span>
-
-            <!-- Nombre del juego -->
-            <p style="color:rgba(255,255,255,0.45); font-size:11px; font-weight:700;
-                      letter-spacing:2px; text-transform:uppercase; margin:0 0 6px;">
-              {{ n.juego }}
-            </p>
-
-            <!-- Título del evento -->
-            <p style="color:#fff; font-size:1.4rem; font-weight:800;
-                      margin:0; font-family:ui-sans-serif,system-ui,sans-serif;
-                      letter-spacing:-0.02em;">
-              {{ n.titulo }}
-            </p>
-          </div>
-
-          <!-- Fecha destacada -->
-          <div style="text-align:right; flex-shrink:0;">
-            <p style="color:rgba(255,255,255,0.3); font-size:12px; font-weight:700;
-                      letter-spacing:2px; text-transform:uppercase; margin:0 0 4px;">
-              Fecha
-            </p>
-            <p style="color:#fff; font-size:1.1rem; font-weight:800; margin:0;" [style.color]="n.color">
-              {{ n.fecha }}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Dots de navegación del carrusel -->
-      <div style="display:flex; gap:8px; justify-content:center; margin-top:16px;">
-        <button *ngFor="let n of noticias; let i = index; trackBy: trackByIndex" (click)="irNoticia(i)" style="border:none; cursor:pointer; border-radius:9999px;
-                       transition:all 0.3s ease; padding:0;" [style.width]="noticiaActiva() === i ? '24px' : '8px'"
-          [style.height]="'8px'" [style.background]="noticiaActiva() === i
-                  ? 'linear-gradient(to right,#7c3aed,#d946ef)'
-                  : 'rgba(255,255,255,0.15)'">
-        </button>
-      </div>
-    </div>
-    <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px;">
-      <div style="width:36px; height:2px;
-                  background:linear-gradient(90deg,#7c3aed,transparent);"></div>
-      <span style="color:#f0abfc; font-size:14px; font-weight:700;
-                   letter-spacing:5px; text-transform:uppercase;">
-        Base de Datos
-      </span>
-    </div>
-
-    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:20px;">
-
-      <a *ngFor="let c of cards; trackBy: trackById" [routerLink]="c.ruta" (mouseenter)="setHover(c.id)"
-        (mouseleave)="setHover(null)" style="position:relative; height:360px; border-radius:4px; overflow:hidden;
-                cursor:pointer; display:flex; flex-direction:column;
-                justify-content:flex-end; padding:28px; text-decoration:none;
-                border:1px solid rgba(255,255,255,0.08);
-                background:rgba(255,255,255,0.015);
-                transition:all 0.45s cubic-bezier(0.16,1,0.3,1);"
-        [style.borderColor]="cardHover() === c.id ? c.color : 'rgba(255,255,255,0.08)'"
-        [style.transform]="cardHover() === c.id ? 'translateY(-10px) scale(1.02)' : 'translateY(0)'"
-        [style.boxShadow]="cardHover() === c.id ? '0 28px 55px -14px ' + c.glow : 'none'">
-
-        <div style="position:absolute; inset:0; z-index:1; overflow:hidden;">
-          <img [src]="c.imagen" [alt]="c.titulo"
-            style="width:100%; height:100%; object-fit:cover; transition: transform 0.6s ease;"
-            [style.transform]="cardHover() === c.id ? 'scale(1.1)' : 'scale(1)'"
-            [style.opacity]="cardHover() === c.id ? '0.4' : '0.25'">
-
-          <div style="position:absolute; inset:0;
-                background: linear-gradient(to bottom, transparent 20%, rgba(6,6,14,0.95) 90%);">
-          </div>
-        </div>
-
-        <!-- ID de sistema  -->
-        <div style="position:absolute; top:14px; right:14px; font-size:9px;
-                    color:rgba(255,255,255,0.18); letter-spacing:1px;">
-          {{ c.id | uppercase }}_SYS_v2.0
-        </div>
-
-        <!-- Tag de categoría -->
-        <div style="position:absolute; top:14px; left:14px;
-                    padding:3px 12px; border-radius:9999px; font-size:9px; font-weight:700;
-                    letter-spacing:2px; text-transform:uppercase;
-                    background:rgba(0,0,0,0.5); color:rgba(255,255,255,0.5);
-                    border:1px solid rgba(255,255,255,0.1);">
-          {{ c.tag }}
-        </div>
-
-        <!-- Contenido inferior de la card -->
-        <div style="position:relative; z-index:2;">
-
-          <!-- Línea + subtítulo -->
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-            <div [style.background]="c.color" style="width:14px; height:2px;"></div>
-            <span style="color:rgba(255,255,255,0.35); font-size:13px; font-weight:700;
-                         text-transform:uppercase; letter-spacing:2px;">
-              {{ c.subtitulo }}
+            <span class="mt-3 flex items-center gap-2 text-monitor font-medium">
+              <img [src]="p.logoA" (error)="logoPorDefecto($event)" alt="" class="h-6 w-6 object-contain" loading="lazy" />
+              <span class="truncate">{{ p.a }}</span>
+              <span class="font-mono text-xs text-monitor-2">vs</span>
+              <span class="truncate">{{ p.b }}</span>
+              <img [src]="p.logoB" (error)="logoPorDefecto($event)" alt="" class="h-6 w-6 object-contain" loading="lazy" />
             </span>
-          </div>
-
-          <!-- Título del juego -->
-          <h2 style="color:#fff; font-size:28px; margin:0; font-weight:800;
-                     letter-spacing:-0.03em; text-transform:uppercase; line-height:1.1;">
-            {{ c.titulo }}
-          </h2>
-
-          <!-- Panel reveal en hover  -->
-          <div style="overflow:hidden; transition:max-height 0.4s ease, opacity 0.35s ease,
-                      margin-top 0.35s ease;" [style.maxHeight]="cardHover() === c.id ? '140px' : '0'"
-            [style.opacity]="cardHover() === c.id ? '1' : '0'" [style.marginTop]="cardHover() === c.id ? '18px' : '0'">
-
-            <p style="color:rgba(255,255,255,0.55); font-size:15px; line-height:1.6;
-                      margin:0 0 18px; font-family:ui-sans-serif,system-ui,sans-serif;">
-              {{ c.descripcion }}
-            </p>
-
-            <!-- CTA estilo datos -->
-            <div [style.color]="c.color" style="font-size:18px; font-weight:900; display:flex;
-                        align-items:center; gap:10px; letter-spacing:1.5px;">
-              INGRESAR
-              <span style="font-size:16px;">[ → ]</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Línea inferior de color del juego  -->
-        <div style="position:absolute; bottom:0; left:0; right:0; height:3px;
-                    transition:opacity 0.3s ease, box-shadow 0.3s ease;" [style.background]="c.color"
-          [style.boxShadow]="'0 0 18px ' + c.color" [style.opacity]="cardHover() === c.id ? '1' : '0.2'">
-        </div>
-      </a>
+            <span class="mt-1 block text-xs text-monitor-2 truncate">{{ p.liga }}</span>
+          </a>
+        } @empty {
+          <p class="px-1 py-4 text-monitor-2">No hay partidos confirmados en este momento.</p>
+        }
+      } @else {
+        @for (n of [1, 2, 3, 4]; track n) { <div class="cargando-bloque h-28 min-w-60"></div> }
+      }
     </div>
+  </section>
 
-    <!-- Pie de sección -->
-    <div style="margin-top:64px; padding-top:32px;
-                border-top:1px solid rgba(255,255,255,0.05); text-align:center;">
-      <p style="color:#374151; font-size:10px; letter-spacing:3px;
-                text-transform:uppercase; margin:0;">
-        Nexos eSports // Competitive Archive // 2024 – 2026
-      </p>
+  <!-- ============ LOS CUATRO GRANDES ============ -->
+  <section class="mt-20" aria-labelledby="titulo-juegos">
+    <h2 id="titulo-juegos" class="letrero text-[clamp(2rem,4vw,3rem)] text-monitor">Los cuatro grandes</h2>
+    <!-- Pared desigual: el juego que tiene partido en vivo ocupa el afiche grande -->
+    <div class="mt-8 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:grid-rows-2">
+      @for (c of cardsOrdenadas(); track c.id; let i = $index) {
+        <a appAfiche [routerLink]="c.ruta" class="juego-afiche afiche flex flex-col overflow-hidden"
+           [class.afiche-der]="i % 2 === 1"
+           [class]="i === 0 ? 'sm:col-span-2 lg:col-span-2 lg:row-span-2' : i === 1 ? 'lg:row-span-2' : ''"
+           [style.--juego]="c.color">
+          <div class="grid place-items-center bg-pared-2 franja flex-1" [class]="i === 0 ? 'p-12 min-h-64' : 'p-6 min-h-36'">
+            <img [src]="c.imagen" [alt]="'Logo de ' + c.titulo" class="w-auto object-contain" [class]="(i === 0 ? 'max-h-44' : 'max-h-20') + (c.id === 'cs2' ? ' logo-claro' : '')" />
+          </div>
+          <div [class]="i === 0 ? 'p-7' : 'p-5'">
+            <h3 class="letrero text-monitor" [class]="i === 0 ? 'text-4xl' : 'text-2xl'">{{ c.titulo }}
+              @if (enVivoIds().has(c.id)) { <span class="ficha ficha-vivo align-middle ml-1"><span class="punto-vivo"></span> en vivo</span> }
+            </h3>
+            @if (i === 0) { <p class="mt-2 text-monitor-2 max-w-md">{{ c.descripcion }}</p> }
+            <span class="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-ambar">Partidos e historia <app-icono nombre="arrow-right" [tam]="16" /></span>
+          </div>
+        </a>
+      }
     </div>
+  </section>
 
-  </main>
+  <!-- ============ CALENDARIO ============ -->
+  <section class="mt-20" aria-labelledby="titulo-calendario">
+    <h2 id="titulo-calendario" class="letrero text-[clamp(2rem,4vw,3rem)] text-monitor">Torneos del año</h2>
+    <ol class="mt-6 cubiculo divide-y divide-cubiculo-2" role="list">
+      @for (e of eventos; track e.titulo) {
+        <li class="evento">
+          <div class="min-w-0 flex-1">
+            <p class="text-monitor font-medium">{{ e.titulo }}</p>
+            <p class="text-sm text-monitor-2">{{ e.juego }}</p>
+          </div>
+          <p class="font-mono text-sm text-monitor-2 tabular hidden sm:block">{{ e.fecha }}</p>
+          <span class="ficha" [class]="e.estado === 'En curso' ? 'ficha-vivo' : e.estado === 'Próximo' ? 'ficha-ambar' : 'ficha-tenue'">
+            @if (e.estado === 'En curso') { <span class="punto-vivo"></span> }
+            {{ e.estado }}
+          </span>
+        </li>
+      }
+    </ol>
+  </section>
 </div>

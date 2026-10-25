@@ -1,59 +1,88 @@
-<header class="fixed top-4 inset-x-0 z-50 flex justify-center px-4">
-    <nav aria-label="Global"
-        class="mx-auto flex w-full max-w-7xl items-center justify-between px-10 py-4
-        bg-purple-900/60 backdrop-blur-md border border-fuchsia-500/30 rounded-full shadow-2xl transition-all duration-300">
+<header class="mostrador" [class.bajo]="bajo()">
+  <!-- Cable del techo del que cuelgan las lámparas -->
+  <span class="cable" aria-hidden="true"></span>
 
-        <div class="flex flex-1">
-            <a routerLink="/" class="flex items-center gap-1 transition-transform hover:scale-105 active:scale-95">
-                <span class="sr-only">Nexos</span>
-                <img src="/Imagenes/Logo.png" alt="Logo Nexos" class="h-12 w-auto object-contain" />
-                <p class="text-2xl font-bold text-white tracking-wider">Nexos</p>
-            </a>
-        </div>
+  <nav aria-label="Principal" class="local flex h-16 items-center gap-4 sm:gap-6">
 
-        <div class="flex items-center gap-6 lg:gap-x-10">
-            <a routerLink="/"
-               routerLinkActive="active-link"
-               [routerLinkActiveOptions]="{ exact: true }"
-               class="nav-item group relative text-[20px] font-semibold leading-6 text-white transition-all hover:text-fuchsia-300">
-                Inicio
-                <span class="absolute -bottom-1 left-0 h-0.5 w-0 bg-fuchsia-500 transition-all duration-300 group-hover:w-full"></span>
-            </a>
-            <a routerLink="/juegos"
-               routerLinkActive="active-link"
-               class="nav-item group relative text-[20px] font-semibold leading-6 text-white transition-all hover:text-fuchsia-300">
-                Juegos
-                <span class="absolute -bottom-1 left-0 h-0.5 w-0 bg-fuchsia-500 transition-all duration-300 group-hover:w-full"></span>
-            </a>
-            <a routerLink="/comparar"
-               routerLinkActive="active-link"
-               class="nav-item group relative text-[20px] font-semibold leading-6 text-white transition-all hover:text-fuchsia-300">
-                Comparación
-                <span class="absolute -bottom-1 left-0 h-0.5 w-0 bg-fuchsia-500 transition-all duration-300 group-hover:w-full"></span>
-            </a>
-            <a routerLink="/esports"
-               routerLinkActive="active-link"
-               class="nav-item group relative text-[20px] font-semibold leading-6 text-white transition-all hover:text-fuchsia-300">
-                Esports
-                <span class="absolute -bottom-1 left-0 h-0.5 w-0 bg-fuchsia-500 transition-all duration-300 group-hover:w-full"></span>
-            </a>
-            <a routerLink="/foro"
-               routerLinkActive="active-link"
-               class="nav-item group relative text-[20px] font-semibold leading-6 text-white transition-all hover:text-fuchsia-300">
-                Foro
-                <span class="absolute -bottom-1 left-0 h-0.5 w-0 bg-fuchsia-500 transition-all duration-300 group-hover:w-full"></span>
-            </a>
-        </div>
-    </nav>
+    <!-- Letrero -->
+    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+      <a routerLink="/" class="flex items-center gap-1.5 sm:gap-2.5 rounded" aria-label="Nexos, ir al inicio">
+        <img src="/Imagenes/Logo.png" alt="" class="h-7 w-7 sm:h-9 sm:w-9 object-contain" />
+        <span #letrero class="letrero text-[1.4rem] sm:text-[1.65rem] text-monitor">Nexos</span>
+      </a>
+      <!-- Cartel de local pegado con cinta -->
+      <span #cartel class="cartel">
+        <span class="cartel-tabla">abierto</span>
+        <span class="cartel-bandas" aria-hidden="true"><i></i><i></i></span>
+      </span>
+    </div>
 
-    <style>
-        @keyframes nexos-pulse {
-            0%   { box-shadow: 0 0 0 0 rgba(212, 126, 252, 0.7); }
-            70%  { box-shadow: 0 0 0 15px rgba(212, 126, 252, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(212, 126, 252, 0); }
+    <!-- Navegación de escritorio: cada enlace cuelga del cable y la lámpara alumbra el de la página actual -->
+    <div #riel class="riel hidden md:block ml-auto">
+      <span #lampara class="lampara sin-transicion" aria-hidden="true"></span>
+      <ul class="flex h-full items-stretch" role="list">
+        @for (e of enlaces; track e.ruta) {
+          <li class="flex">
+            <a [routerLink]="e.ruta" routerLinkActive="activo" [routerLinkActiveOptions]="{ exact: e.exacto }"
+               ariaCurrentWhenActive="page" class="enlace" (isActiveChange)="alCambiarActivo()">{{ e.texto }}</a>
+          </li>
         }
-        .click-pulse { animation: nexos-pulse 0.5s ease-out; }
-        .active-link { color: #d47efc !important; }
-        .active-underline { width: 100% !important; }
-    </style>
+      </ul>
+    </div>
+
+    <!-- Cubículo de sesión -->
+    <div class="ml-auto md:ml-2 flex items-center gap-2">
+      @if (usuario(); as u) {
+        <a routerLink="/perfil" class="cubiculo-sesion" aria-label="Tu perfil">
+          @if (u.photoURL) {
+            <img [src]="u.photoURL" alt="" class="h-7 w-7 rounded-sm object-cover" referrerpolicy="no-referrer" />
+          } @else {
+            <span class="h-7 w-7 rounded-sm bg-nexos grid place-items-center"><app-icono nombre="user" [tam]="16" /></span>
+          }
+          <span class="flex flex-col leading-tight">
+            <span class="hidden lg:block text-[0.7rem] text-monitor-2">Tu cubículo</span>
+            <span class="font-mono text-xs sm:text-sm text-vivo tabular" aria-label="Tiempo de sesión">{{ tiempo() }}</span>
+          </span>
+        </a>
+        <button type="button" class="boton boton-linea !min-h-9 !px-2.5 hidden md:inline-flex" (click)="levantarse()" aria-label="Cerrar sesión">
+          <app-icono nombre="log-out" [tam]="18" />
+        </button>
+      } @else {
+        <button type="button" class="boton boton-principal !min-h-9 hidden sm:inline-flex" (click)="sentarse()" [disabled]="entrando()">
+          <app-icono nombre="log-in" [tam]="18" />
+          {{ entrando() ? 'Entrando…' : 'Sentarse' }}
+        </button>
+      }
+
+      <!-- Menú del celular -->
+      <button type="button" class="boton boton-linea !min-h-9 !px-2.5 md:hidden" (click)="alternarMenu()"
+              [attr.aria-expanded]="menuAbierto()" aria-controls="menu-movil" [attr.aria-label]="menuAbierto() ? 'Cerrar menú' : 'Abrir menú'">
+        <app-icono [nombre]="menuAbierto() ? 'x' : 'list'" [tam]="20" />
+      </button>
+    </div>
+  </nav>
+
+  @if (menuAbierto()) {
+    <div id="menu-movil" class="menu-movil md:hidden border-y border-cubiculo-2 bg-pared-2">
+      <ul class="local py-3 flex flex-col" role="list">
+        @for (e of enlaces; track e.ruta) {
+          <li>
+            <a [routerLink]="e.ruta" routerLinkActive="activo" [routerLinkActiveOptions]="{ exact: e.exacto }"
+               ariaCurrentWhenActive="page" class="enlace enlace-movil">{{ e.texto }}</a>
+          </li>
+        }
+        <li class="pt-3 mt-2 border-t border-cubiculo-2">
+          @if (usuario()) {
+            <button type="button" class="boton boton-linea w-full" (click)="levantarse()">
+              <app-icono nombre="log-out" [tam]="18" /> Cerrar sesión
+            </button>
+          } @else {
+            <button type="button" class="boton boton-principal w-full" (click)="sentarse()" [disabled]="entrando()">
+              <app-icono nombre="log-in" [tam]="18" /> {{ entrando() ? 'Entrando…' : 'Sentarse (iniciar sesión)' }}
+            </button>
+          }
+        </li>
+      </ul>
+    </div>
+  }
 </header>

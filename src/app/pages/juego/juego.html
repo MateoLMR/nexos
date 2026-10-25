@@ -1,228 +1,192 @@
-<!--Componente normal es la pagina base de todos los juegos se carga las animaicones de valoracion y demas, diseño del juego, etc. todo dividido en juego.ts y juego.css.
-La informacion del juego esta en la carpeta services con dos componentes inline-->
-<div class="bg-[#0f0b1b] overflow-x-hidden min-h-screen">
+<!-- ============ PORTADA ============ -->
+<section #hero class="hero" [class.hero-vacio]="!juego">
+  @if (juego) {
+    <img [src]="juego.imagen" alt="" class="hero-arte" style="view-transition-name: portada-juego" />
+  }
+  <div class="hero-velo"></div>
+  <div class="local hero-texto">
+    <a routerLink="/juegos" class="inline-flex items-center gap-1.5 text-sm text-monitor-2 hover:text-ambar volver">
+      <app-icono nombre="arrow-left" [tam]="16" /> Juegos del local
+    </a>
+    <h1 class="letrero text-[clamp(2.75rem,7vw,6rem)] text-monitor mt-4 max-w-4xl">
+      {{ juego?.titulo ?? (cargando ? 'Cargando…' : 'Juego no encontrado') }}
+    </h1>
+    @if (juego; as j) {
+      <ul class="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 text-monitor-2" role="list">
+        <li><span class="ficha ficha-sobre-foto">{{ j.genero }}</span></li>
+        <li class="inline-flex items-center gap-2"><app-icono nombre="calendar" [tam]="18" /> {{ j.lanzamiento }}</li>
+        <li class="inline-flex items-center gap-2"><app-icono nombre="monitor" [tam]="18" /> {{ j.plataformas }}</li>
+        <li class="inline-flex items-center gap-2"><app-icono nombre="user" [tam]="18" /> {{ j.Creador }}</li>
+      </ul>
+    }
+  </div>
+</section>
 
-  <!-- HERO con imagen de fondo y parallax -->
-  <section id="hero-juego">
-    <div #heroBg id="hero-bg" [style.backgroundImage]="heroBgStyle"></div>
+@if (juego; as j) {
+  <div class="local grid grid-cols-1 gap-10 lg:grid-cols-12 pt-12">
 
-    <div id="hero-contenido" class="px-6 lg:px-8">
-      <div class="max-w-7xl mx-auto">
-        <div class="hero-badge">{{ juego?.genero }}</div>
-        <h1 id="hero-titulo-juego">{{ juego?.titulo ?? 'Juego no encontrado' }}</h1>
+    <!-- ============ COLUMNA PRINCIPAL ============ -->
+    <div class="lg:col-span-8 min-w-0">
 
-        <div class="hero-meta" *ngIf="juego">
-          <span>
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            {{ juego.lanzamiento }}
-          </span>
-          <span>
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-            {{ juego.plataformas }}
-          </span>
-          <span>
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-            {{ juego.Creador }}
-          </span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CONTENIDO PRINCIPAL -->
-  <main class="mx-auto max-w-7xl px-6 lg:px-1 py-10" *ngIf="juego; else noEncontrado">
-    <div class="flex flex-col lg:flex-row lg:gap-10">
-
-      <!-- COLUMNA IZQUIERDA: galería -->
-      <div class="w-full lg:w-[80%] mb-10 lg:mb-0">
-
-        <!-- Galería principal -->
-        <div id="main-media-container">
-          <button class="gallery-arrow gallery-arrow-left" (click)="navegarGaleria(-1)" aria-label="Anterior">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <button class="gallery-arrow gallery-arrow-right" (click)="navegarGaleria(1)" aria-label="Siguiente">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-          <div class="media-counter">{{ contadorMedia }}</div>
-          <video *ngIf="mediaActual()?.tipo === 'video'" controls autoplay class="w-full h-full object-cover">
-            <source [src]="mediaActual()?.src" type="video/mp4" />
-            Tu navegador no soporta videos.
-          </video>
-          <img *ngIf="mediaActual()?.tipo === 'image'" [src]="mediaActual()?.src" alt="Contenido del juego"
-            class="w-full h-full object-cover cursor-pointer" (click)="abrirModal(mediaActual()!.src)" />
-        </div>
-
-        <!-- Miniaturas -->
-        <div id="miniaturas-container">
-          <button *ngFor="let item of juego.galeria; let i = index" (click)="seleccionarMedia(i)"
-            [class]="i === indexActual() ? 'activa' : ''">
-            <img [src]="item.thumb" [alt]="'Miniatura ' + (i+1)" />
-            <span *ngIf="item.tipo === 'video'" class="play-icon">▶</span>
-          </button>
-        </div>
-
-        <!-- Pros y Contras -->
-        <div class="mt-10">
-          <h2 class="seccion-titulo">Puntos clave</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-            <div class="rounded-xl bg-emerald-950/40 border border-emerald-500/20 p-5">
-              <h3 class="text-emerald-400 font-bold text-lg mb-4">✅ Lo mejor</h3>
-              <ul class="space-y-3">
-                <li *ngFor="let pro of juego.pros"
-                    class="flex items-start gap-2 text-gray-200 text-base leading-relaxed">
-                  <span class="text-emerald-400 mt-0.5 shrink-0">•</span>{{ pro }}
-                </li>
-              </ul>
-            </div>
-            <div class="rounded-xl bg-amber-950/40 border border-amber-500/20 p-5">
-              <h3 class="text-amber-400 font-bold text-lg mb-4">⚠️ A tener en cuenta</h3>
-              <ul class="space-y-3">
-                <li *ngFor="let contra of juego.contras"
-                    class="flex items-start gap-2 text-gray-200 text-base leading-relaxed">
-                  <span class="text-amber-400 mt-0.5 shrink-0">•</span>{{ contra }}
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <!-- Ratings con animación ─────────────────────────────────────────────────
-             ratingWidths[i] empieza en 0 y se actualiza a r.valor tras 80ms.
-             El transition CSS de 800ms anima el cambio de 0% → valor%.
-             Se usa trackBy para que Angular no destruya/recree los elementos
-             entre juegos, lo que mataría la transición.                         -->
-        <div class="mt-10">
-          <h2 class="seccion-titulo">Valoración Nexos</h2>
-          <div class="space-y-5 mt-4">
-            <div *ngFor="let r of juego.ratings; let i = index; trackBy: trackByIndex">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <span style="color:#c4b5fd; font-weight:600; font-size:1rem;">{{ r.label }}</span>
-                <span style="color:#ffffff; font-weight:700; font-size:1rem;">{{ r.valor }}</span>
-              </div>
-              <div style="width:100%; height:12px; border-radius:9999px; background:rgba(255,255,255,0.08); overflow:hidden;">
-                <!-- ancho controlado por ratingWidths[i], no por r.valor directamente -->
-                <div [style.width.%]="ratingWidths[i] ?? 0"
-                     [style.background]="getRatingColor(r.valor)"
-                     style="height:100%; border-radius:9999px; transition: width 0.85s cubic-bezier(0.4, 0, 0.2, 1);">
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- COLUMNA DERECHA: info + tiendas -->
-      <div class="w-full lg:w-[42%]">
-        <div class="space-y-8">
-
-          <!-- Información -->
-          <div>
-            <h2 class="seccion-titulo">Información</h2>
-            <div class="grid grid-cols-2 gap-4 text-lg">
-              <div>
-                <p class="text-purple-300/60 font-semibold mb-1">Género</p>
-                <p class="text-purple-100">{{ juego.genero }}</p>
-              </div>
-              <div>
-                <p class="text-purple-300/60 font-semibold mb-1">Lanzamiento</p>
-                <p class="text-purple-100">{{ juego.lanzamiento }}</p>
-              </div>
-              <div>
-                <p class="text-purple-300/60 font-semibold mb-1">Plataformas</p>
-                <p class="text-purple-100">{{ juego.plataformas }}</p>
-              </div>
-              <div>
-                <p class="text-purple-300/60 font-semibold mb-1">Desarrollador</p>
-                <p class="text-purple-100">{{ juego.Creador }}</p>
-              </div>
-            </div>
+      <!-- Galería -->
+      @if (j.galeria.length) {
+        <section aria-label="Galería" class="bloque">
+          <div class="media-principal cubiculo">
+            @if (mediaActual(); as m) {
+              @if (m.tipo === 'video') {
+                <video controls class="h-full w-full object-cover" [src]="m.src"></video>
+              } @else {
+                <img [src]="m.src" [alt]="'Captura ' + (indexActual() + 1) + ' de ' + j.titulo" class="h-full w-full object-cover cursor-zoom-in"
+                     (click)="abrirModal(m.src)" />
+              }
+            }
+            <button type="button" class="flecha flecha-izq" (click)="navegarGaleria(-1)" aria-label="Anterior">
+              <app-icono nombre="arrow-left" [tam]="20" />
+            </button>
+            <button type="button" class="flecha flecha-der" (click)="navegarGaleria(1)" aria-label="Siguiente">
+              <app-icono nombre="arrow-right" [tam]="20" />
+            </button>
+            <span class="ficha ficha-sobre-foto absolute bottom-3 right-3 tabular">{{ contadorMedia }}</span>
           </div>
 
-          <!-- Descripción -->
-          <div>
-            <h2 class="seccion-titulo">Sobre el juego</h2>
-            <p class="text-gray-300 leading-relaxed text-xl">{{ juego.descripcionLarga }}</p>
+          <div class="miniaturas" role="list">
+            @for (item of j.galeria; track $index; let i = $index) {
+              <button type="button" role="listitem" class="miniatura" [class.miniatura-activa]="i === indexActual()"
+                      (click)="seleccionarMedia(i)" [attr.aria-label]="'Ver ' + (item.tipo === 'video' ? 'video ' : 'imagen ') + (i + 1)"
+                      [attr.aria-current]="i === indexActual()">
+                <img [src]="item.thumb" alt="" class="h-full w-full object-cover" loading="lazy" />
+                @if (item.tipo === 'video') {
+                  <span class="absolute inset-0 grid place-items-center bg-pared/50 text-monitor"><app-icono nombre="play" [tam]="22" /></span>
+                }
+              </button>
+            }
           </div>
+        </section>
+      }
 
-          <!-- Tiendas -->
-          <div>
-            <h2 class="seccion-titulo">Comprar juego</h2>
-            <div class="flex flex-col gap-3">
-              <a *ngFor="let tienda of juego.tiendas"
-                 [href]="tienda.url" target="_blank" rel="noopener"
-                 class="flex items-center justify-between px-5 py-3 rounded-xl border
-                        transition-all duration-200 hover:scale-[1.02] hover:brightness-110 cursor-pointer no-underline"
-                 [ngClass]="getTiendaClases(tienda.nombre)">
-                <span class="font-bold text-base">{{ tienda.nombre }}</span>
-                <span class="font-black text-lg">{{ tienda.precio }}</span>
-              </a>
+      <!-- Sobre el juego -->
+      <section class="bloque mt-14">
+        <h2 class="letrero text-3xl text-monitor">Sobre el juego</h2>
+        <p class="mt-4 text-lg leading-relaxed text-monitor/90 max-w-[68ch]">{{ j.descripcionLarga }}</p>
+      </section>
+
+      <!-- Valoración -->
+      <section class="bloque mt-14" aria-labelledby="titulo-valoracion">
+        <h2 id="titulo-valoracion" class="letrero text-3xl text-monitor">Valoración Nexos</h2>
+        <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
+          @for (r of j.ratings; track r.label; let i = $index) {
+            <div class="medidor">
+              <div class="flex items-baseline justify-between">
+                <span class="text-monitor font-medium">{{ r.label }}</span>
+                <span class="font-mono text-2xl text-monitor tabular" [appContador]="r.valor" [contadorRetraso]="0.15 + i * 0.08">{{ r.valor }}</span>
+              </div>
+              <div class="medidor-pista" role="meter" [attr.aria-valuenow]="r.valor" aria-valuemin="0" aria-valuemax="100" [attr.aria-label]="r.label">
+                <div class="medidor-relleno" [attr.data-valor]="r.valor" [class.medidor-bajo]="r.valor < 50"></div>
+              </div>
             </div>
-          </div>
-
+          }
         </div>
-      </div>
+      </section>
 
+      <!-- Pros y contras -->
+      <section class="bloque mt-14" aria-labelledby="titulo-puntos">
+        <h2 id="titulo-puntos" class="letrero text-3xl text-monitor">Lo bueno y lo que debes saber</h2>
+        <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div class="cubiculo p-6">
+            <h3 class="flex items-center gap-2 text-lg font-semibold text-nexos-claro"><app-icono nombre="plus" [tam]="20" /> Lo mejor</h3>
+            <ul class="mt-4 space-y-3" role="list">
+              @for (p of j.pros; track p) {
+                <li class="flex gap-3 text-monitor/90"><app-icono nombre="check" [tam]="18" class="text-nexos-claro mt-1" /> {{ p }}</li>
+              }
+            </ul>
+          </div>
+          <div class="cubiculo p-6">
+            <h3 class="flex items-center gap-2 text-lg font-semibold text-ambar"><app-icono nombre="minus" [tam]="20" /> A tener en cuenta</h3>
+            <ul class="mt-4 space-y-3" role="list">
+              @for (c of j.contras; track c) {
+                <li class="flex gap-3 text-monitor/90"><app-icono nombre="alert" [tam]="18" class="text-ambar mt-1" /> {{ c }}</li>
+              }
+            </ul>
+          </div>
+        </div>
+      </section>
     </div>
 
-    <!-- Relacionados -->
-    <div class="mt-16" *ngIf="relacionados.length > 0">
-      <h2 class="seccion-titulo">Juegos que también te pueden gustar</h2>
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 mt-4">
-        <a *ngFor="let rel of relacionados"
-           [routerLink]="['/juego', rel.id]"
-           style="display:block; border-radius:12px; overflow:hidden;
-                  border:1px solid rgba(255,255,255,0.1); text-decoration:none;
-                  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-                  cursor:pointer;"
-           onmouseover="this.style.transform='translateY(-4px)'; this.style.borderColor='rgba(217,70,239,0.5)'; this.style.boxShadow='0 8px 30px rgba(88,28,135,0.35)'"
-           onmouseout="this.style.transform=''; this.style.borderColor='rgba(255,255,255,0.1)'; this.style.boxShadow=''">
-          <div [style.backgroundImage]="'url(' + rel.imagen + ')'"
-               style="width:100%; padding-top:65%; background-size:cover;
-                      background-position:center; background-repeat:no-repeat;">
+    <!-- ============ COLUMNA DE PRECIOS (fija) ============ -->
+    <aside class="lg:col-span-4">
+      <div class="lg:sticky lg:top-24 space-y-6">
+        <section appAfiche="4" class="afiche afiche-recto tablero" aria-labelledby="titulo-precios">
+          <header class="flex items-center justify-between px-5 pt-5">
+            <h2 id="titulo-precios" class="letrero text-2xl text-ambar">Dónde comprarlo</h2>
+            <app-icono nombre="store" [tam]="20" class="text-ambar" />
+          </header>
+          <ul class="px-5 pb-3 pt-2" role="list">
+            @for (t of tiendasOrdenadas; track t.nombre; let i = $index) {
+              <li class="fila-tienda">
+                <a [href]="t.url" target="_blank" rel="noopener" class="tienda" [class]="claseTienda(t.nombre)">
+                  <span class="min-w-0">
+                    <span class="flex items-center gap-1.5 text-monitor font-medium">
+                      {{ t.nombre }} <app-icono nombre="external-link" [tam]="14" class="text-monitor-2" />
+                    </span>
+                    @if (t.masBarata) { <span class="text-xs text-ambar">El más barato</span> }
+                  </span>
+                  <span class="font-mono text-lg tabular whitespace-nowrap" [class.text-ambar]="t.masBarata" [class.text-monitor]="!t.masBarata"
+                        [appContador]="t.precio" [contadorRetraso]="0.35 + i * 0.08">{{ t.precio }}</span>
+                  <span class="sr-only">(se abre en otra pestaña)</span>
+                </a>
+              </li>
+            } @empty {
+              <li class="py-3 text-sm text-monitor-2">Aún no tenemos tiendas para este juego.</li>
+            }
+          </ul>
+          <p class="px-5 pb-4 text-xs text-monitor-2">Precios de referencia; pueden cambiar en cada tienda.</p>
+        </section>
+
+        <section class="cubiculo p-5">
+          <h2 class="letrero text-xl text-monitor">Ficha</h2>
+          <dl class="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+            <div><dt class="text-monitor-2">Género</dt><dd class="text-monitor">{{ j.genero }}</dd></div>
+            <div><dt class="text-monitor-2">Lanzamiento</dt><dd class="text-monitor tabular">{{ j.lanzamiento }}</dd></div>
+            <div class="col-span-2"><dt class="text-monitor-2">Plataformas</dt><dd class="text-monitor">{{ j.plataformas }}</dd></div>
+            <div class="col-span-2"><dt class="text-monitor-2">Desarrollador</dt><dd class="text-monitor">{{ j.Creador }}</dd></div>
+          </dl>
+          <div class="mt-5 grid gap-2">
+            <a [routerLink]="['/comparar']" [queryParams]="{ a: juegoId }" class="boton boton-principal w-full"><app-icono nombre="scale" [tam]="18" /> Compararlo con otro</a>
+            <a routerLink="/foro" class="boton boton-linea w-full"><app-icono nombre="message" [tam]="18" /> Preguntar en el foro</a>
           </div>
-          <p style="color:#fff; font-weight:600; font-size:0.875rem;
-                    padding:8px 12px; margin:0; line-height:1.3;">
-            {{ rel.titulo }}
-          </p>
-        </a>
+        </section>
       </div>
-    </div>
-
-  </main>
-
-  <!-- No encontrado -->
-  <ng-template #noEncontrado>
-    <div class="flex flex-col items-center justify-center py-40 text-center">
-      <p class="text-4xl text-fuchsia-400 mb-4">😕 Juego no encontrado</p>
-      <a routerLink="/juegos" class="text-purple-300 hover:text-fuchsia-300 underline text-lg">Volver al catálogo</a>
-    </div>
-  </ng-template>
-
-  <!-- Modal imagen ampliada -->
-  <div *ngIf="modalAbierto()" class="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]"
-    (click)="cerrarModal()">
-    <img [src]="modalSrc()" alt="Imagen ampliada del juego"
-      class="w-full h-full max-w-[80%] max-h-[85%] rounded-xl shadow-2xl cursor-pointer object-contain"
-      (click)="$event.stopPropagation()" />
-    <button class="absolute top-5 right-6 text-white text-4xl font-light hover:text-fuchsia-400 transition-colors"
-      (click)="cerrarModal()">
-      &times;
-    </button>
+    </aside>
   </div>
 
-</div>
+  <!-- ============ RELACIONADOS ============ -->
+  @if (relacionados.length) {
+    <section class="local bloque mt-24" aria-labelledby="titulo-relacionados">
+      <h2 id="titulo-relacionados" class="letrero text-3xl text-monitor">Si te gusta {{ j.titulo }}</h2>
+      <div class="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-5">
+        @for (r of relacionados; track r.id) {
+          <a [routerLink]="['/juego', r.id]" class="relacionado cubiculo overflow-hidden">
+            <img [src]="r.imagen" [alt]="'Portada de ' + r.titulo" class="aspect-[16/10] w-full object-cover" loading="lazy" />
+            <p class="p-3 text-sm font-medium text-monitor">{{ r.titulo }}</p>
+          </a>
+        }
+      </div>
+    </section>
+  }
+} @else if (!cargando) {
+  <div class="local py-24 flex flex-col items-center text-center">
+    <app-icono nombre="search" [tam]="32" class="text-ambar" />
+    <p class="letrero text-3xl text-monitor mt-4">Ese juego no está en el estante</p>
+    <a routerLink="/juegos" class="boton boton-linea mt-6"><app-icono nombre="arrow-left" [tam]="18" /> Volver a los juegos</a>
+  </div>
+}
+
+<!-- ============ IMAGEN AMPLIADA ============ -->
+@if (modalAbierto()) {
+  <div class="lightbox" role="dialog" aria-modal="true" aria-label="Imagen ampliada" (click)="cerrarModal()">
+    <img [src]="modalSrc()" alt="Imagen ampliada del juego" class="max-h-[85vh] max-w-[90vw] object-contain rounded-sm" (click)="$event.stopPropagation()" />
+    <button #cerrarLightbox type="button" class="boton boton-linea absolute top-5 right-5 !bg-pared" (click)="cerrarModal()" aria-label="Cerrar imagen">
+      <app-icono nombre="x" [tam]="20" />
+    </button>
+  </div>
+}

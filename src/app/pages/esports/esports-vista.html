@@ -1,0 +1,133 @@
+<div class="local pt-10 pb-10" [style.--juego]="color()">
+  <a data-entra routerLink="/esports" class="inline-flex items-center gap-1.5 text-sm text-monitor-2 hover:text-ambar no-underline">
+    <app-icono nombre="arrow-left" [tam]="16" /> Cartelera de eSports
+  </a>
+
+  <!-- ============ CARTEL DEL JUEGO ============ -->
+  <header data-entra class="mt-5 grid grid-cols-1 gap-8 lg:grid-cols-12 items-end">
+    <div class="lg:col-span-8">
+      <h1 class="letrero text-[clamp(3rem,8vw,6rem)] text-monitor">
+{{ titulo() }}
+      </h1>
+      <p class="mt-5 text-lg text-monitor-2 max-w-2xl">{{ descripcion() }}</p>
+    </div>
+    <dl class="lg:col-span-4 grid grid-cols-2 gap-3">
+      <div class="cubiculo p-4">
+        <dt class="text-xs text-monitor-2">Lanzamiento</dt>
+        <dd class="font-mono text-2xl text-monitor tabular mt-1">{{ lanzamiento() }}</dd>
+      </div>
+      <div class="cubiculo p-4">
+        <dt class="text-xs text-monitor-2">Partidos en vivo</dt>
+        <dd class="font-mono text-2xl mt-1 tabular" [class.text-vivo]="enVivo() > 0" [class.text-monitor]="enVivo() === 0">{{ cargando() ? '…' : enVivo() }}</dd>
+      </div>
+      <div class="cubiculo p-4 col-span-2">
+        <dt class="text-xs text-monitor-2">El torneo rey</dt>
+        <dd class="text-monitor font-medium mt-1">{{ mundial() }}</dd>
+      </div>
+    </dl>
+  </header>
+
+  <!-- ============ PARTIDOS ============ -->
+  <section class="mt-16" aria-labelledby="titulo-partidos">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h2 id="titulo-partidos" class="letrero text-3xl text-monitor">Partidos</h2>
+      <p class="text-sm text-monitor-2 flex items-center gap-2"><app-icono nombre="clock" [tam]="16" /> Se actualiza solo cada minuto</p>
+    </div>
+
+    <div class="mt-6" aria-live="polite">
+      @if (cargando()) {
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          @for (n of [1, 2, 3]; track n) { <div class="cargando-bloque h-48"></div> }
+        </div>
+      } @else if (!partidos().length) {
+        <div class="vacio">
+          <app-icono nombre="calendar" [tam]="28" class="text-ambar" />
+          <p class="letrero text-2xl text-monitor mt-3">No hay partidos confirmados ahora</p>
+          <p class="text-monitor-2 mt-1">Vuelve más tarde; la cartelera se actualiza sola.</p>
+        </div>
+      } @else {
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          @for (m of partidos(); track m.id) {
+            <article class="partido cubiculo" [class.partido-vivo]="m.status === 'LIVE'">
+              <div class="flex items-center justify-between gap-2 px-5 pt-4">
+                @if (m.status === 'LIVE') {
+                  <span class="ficha ficha-vivo"><span class="punto-vivo"></span> en vivo</span>
+                } @else {
+                  <span class="ficha ficha-tenue">{{ m.time }}</span>
+                }
+                <span class="text-xs text-monitor-2 truncate">{{ m.league }}</span>
+              </div>
+              <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-5 py-5">
+                <div class="flex flex-col items-center text-center min-w-0">
+                  <img [src]="m.logoA" (error)="logoPorDefecto($event)" alt="" class="h-12 w-12 object-contain" loading="lazy" />
+                  <span class="mt-2 text-sm font-medium text-monitor line-clamp-2">{{ m.teamA }}</span>
+                </div>
+                <span class="font-mono text-xs text-monitor-2">vs</span>
+                <div class="flex flex-col items-center text-center min-w-0">
+                  <img [src]="m.logoB" (error)="logoPorDefecto($event)" alt="" class="h-12 w-12 object-contain" loading="lazy" />
+                  <span class="mt-2 text-sm font-medium text-monitor line-clamp-2">{{ m.teamB }}</span>
+                </div>
+              </div>
+              <button type="button" class="boton w-full !rounded-none !rounded-b-[3px]"
+                      [class.boton-principal]="m.status === 'LIVE'" [class.boton-linea]="m.status !== 'LIVE'"
+                      (click)="verStream.emit(m.streamUrl)">
+                <app-icono [nombre]="m.status === 'LIVE' ? 'tv' : 'external-link'" [tam]="18" />
+                {{ m.status === 'LIVE' ? 'Ver la transmisión' : 'Ver el canal de la liga' }}
+              </button>
+            </article>
+          }
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- ============ CRONOLOGÍA ============ -->
+  @if (hitos().length) {
+    <section class="mt-20" aria-labelledby="titulo-historia">
+      <h2 id="titulo-historia" class="letrero text-3xl text-monitor">Cómo llegó hasta aquí</h2>
+      <ol class="linea mt-8" role="list">
+        @for (h of hitos(); track h.year + h.title; let i = $index) {
+          <li>
+            <button type="button" class="hito" [class.hito-activo]="i === hitoActual()" (click)="irA.emit(i)"
+                    [attr.aria-current]="i === hitoActual() ? 'step' : null">
+              <span class="font-mono text-sm tabular">{{ h.year }}</span>
+              <span class="text-sm">{{ h.title }}</span>
+            </button>
+          </li>
+        }
+      </ol>
+      <div class="cubiculo mt-4 p-6 sm:p-8 flex items-start gap-4">
+        <button type="button" class="boton boton-linea !px-2.5 shrink-0" (click)="anterior.emit()" aria-label="Hito anterior">
+          <app-icono nombre="arrow-left" [tam]="18" />
+        </button>
+        <div class="flex-1 min-w-0">
+          <h3 class="letrero text-3xl text-monitor">{{ hitos()[hitoActual()].title }}
+            <span class="font-mono text-xl text-monitor-2 tabular ml-1">{{ hitos()[hitoActual()].year }}</span></h3>
+          <p class="mt-3 text-monitor/90 max-w-[65ch] min-h-[4.8em]" aria-live="polite">{{ textoHito() }}<span class="cursor" aria-hidden="true"></span></p>
+        </div>
+        <button type="button" class="boton boton-linea !px-2.5 shrink-0" (click)="siguiente.emit()" aria-label="Hito siguiente">
+          <app-icono nombre="arrow-right" [tam]="18" />
+        </button>
+      </div>
+    </section>
+  }
+
+  <!-- ============ LEYENDAS ============ -->
+  @if (leyendas().length) {
+    <section class="mt-20" aria-labelledby="titulo-leyendas">
+      <h2 id="titulo-leyendas" class="letrero text-3xl text-monitor">Leyendas</h2>
+      <div class="mt-8 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        @for (l of leyendas(); track l.name; let i = $index) {
+          <article appAfiche class="leyenda afiche overflow-hidden" [class.afiche-der]="i % 2 === 1">
+            <img [src]="l.image" [alt]="l.name" class="aspect-[4/3] w-full object-cover object-top" loading="lazy" />
+            <div class="p-5">
+              <h3 class="letrero text-2xl text-monitor">{{ l.name }}</h3>
+              <p class="text-sm text-nexos-claro">{{ l.role }}</p>
+              <p class="mt-2 text-sm text-monitor/85">{{ l.desc }}</p>
+            </div>
+          </article>
+        }
+      </div>
+    </section>
+  }
+</div>

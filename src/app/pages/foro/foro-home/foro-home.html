@@ -1,165 +1,224 @@
-<div class="forum-page">
-
-  <section class="forum-hero">
-    <div class="hero-content">
-      <h1>Nexos Forum</h1>
-      <p>Discute, compara y descubre videojuegos junto a la comunidad.</p>
+<div class="local pt-12 pb-10">
+  <header class="flex flex-wrap items-end justify-between gap-6">
+    <div class="max-w-2xl">
+      <h1 class="letrero text-[clamp(2.75rem,6vw,4.75rem)] text-monitor">El tablero</h1>
+      <p class="mt-4 text-lg text-monitor-2">Pregunta, responde y conversa con otros jugadores. Aquí no hay dudas tontas.</p>
     </div>
-  </section>
+    <dl class="flex gap-8 tabular">
+      <div><dt class="text-xs text-monitor-2">Publicaciones</dt><dd class="font-mono text-3xl text-monitor">{{ posts.length }}</dd></div>
+      <div><dt class="text-xs text-monitor-2">Comentarios</dt><dd class="font-mono text-3xl text-monitor">{{ totalComentarios }}</dd></div>
+    </dl>
+  </header>
 
-  <section class="forum-container">
+  <div class="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-12">
 
-    <aside class="forum-sidebar">
-      <div class="sidebar-card">
-        <h3>🔥 Tendencias</h3>
-        <ul>
-          <li># GTA VI</li>
-          <li># Valorant</li>
-          <li># Elden Ring</li>
-          <li># CS2</li>
-          <li># Marvel Rivals</li>
-        </ul>
+    <!-- ============ COLUMNA DE PUBLICACIONES ============ -->
+    <main class="lg:col-span-8 min-w-0">
+
+      <!-- Escribir -->
+      @if (user) {
+        <form class="cubiculo p-5 sm:p-6" (ngSubmit)="createPost()" aria-labelledby="titulo-escribir">
+          <h2 id="titulo-escribir" class="letrero text-2xl text-monitor">Pega algo en el tablero</h2>
+          <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_12rem]">
+            <label>
+              <span class="sr-only">Título</span>
+              <input class="campo" type="text" name="titulo" [(ngModel)]="title" placeholder="¿Vale la pena Manor Lords en 2026?" maxlength="120" />
+            </label>
+            <label class="relative">
+              <span class="sr-only">Categoría</span>
+              <select class="campo appearance-none pr-9 cursor-pointer" name="categoria" [(ngModel)]="category">
+                @for (c of categorias; track c) { <option [value]="c">{{ c }}</option> }
+              </select>
+              <app-icono nombre="chevron-down" [tam]="16" class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-monitor-2" />
+            </label>
+          </div>
+          <label class="block mt-3">
+            <span class="sr-only">Mensaje</span>
+            <textarea class="campo min-h-28 resize-y" name="mensaje" [(ngModel)]="content" (input)="errorPublicar = ''"
+                      placeholder="Cuéntale a la comunidad tu duda, tu opinión o tu recomendación"></textarea>
+          </label>
+          <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+            @if (errorPublicar) {
+              <p role="alert" class="text-sm text-alerta flex items-center gap-1.5"><app-icono nombre="alert" [tam]="16" /> {{ errorPublicar }}</p>
+            } @else {
+              <p class="text-sm text-monitor-2">Publicas como <span class="text-monitor">{{ user.displayName }}</span></p>
+            }
+            <button type="submit" class="boton boton-principal" [disabled]="loadingPost">
+              <app-icono nombre="send" [tam]="18" /> {{ loadingPost ? 'Publicando…' : 'Publicar' }}
+            </button>
+          </div>
+        </form>
+      } @else {
+        <div class="cubiculo p-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 class="letrero text-2xl text-monitor">Siéntate para publicar</h2>
+            <p class="text-monitor-2 mt-1">Entra con Google para preguntar, comentar y dar like.</p>
+          </div>
+          <button type="button" class="boton boton-principal" (click)="login()" [disabled]="loadingLogin">
+            <app-icono nombre="log-in" [tam]="18" /> {{ loadingLogin ? 'Entrando…' : 'Entrar con Google' }}
+          </button>
+        </div>
+      }
+
+      <!-- Orden -->
+      <div class="mt-8 flex flex-wrap items-center justify-between gap-3">
+        <h2 class="letrero text-2xl text-monitor">
+          {{ filtro === 'todas' ? 'Todas las publicaciones' : filtro }}
+        </h2>
+        <div role="group" aria-label="Ordenar" class="segmentos">
+          <button type="button" class="segmento" [class.segmento-activo]="orden === 'recientes'" [attr.aria-pressed]="orden === 'recientes'" (click)="orden = 'recientes'">Recientes</button>
+          <button type="button" class="segmento" [class.segmento-activo]="orden === 'queridas'" [attr.aria-pressed]="orden === 'queridas'" (click)="orden = 'queridas'">Más queridas</button>
+        </div>
       </div>
-      <div class="sidebar-card">
-        <h3>🏆 Comunidad</h3>
-        <p>Comparte opiniones, descubre nuevos juegos y ayuda a otros jugadores.</p>
+
+      <!-- Publicaciones -->
+      <div class="mt-4 space-y-4" aria-live="polite">
+        @if (!cargado) {
+          @for (n of [1, 2, 3]; track n) { <div class="cargando-bloque h-40"></div> }
+        } @else if (errorCarga) {
+          <div class="vacio">
+            <app-icono nombre="alert" [tam]="28" class="text-alerta" />
+            <p class="letrero text-2xl text-monitor mt-3">No pudimos leer el tablero</p>
+            <button type="button" class="boton boton-linea mt-4" (click)="loadPosts()">Intentar de nuevo</button>
+          </div>
+        }
+
+        @for (post of visibles; track post.id) {
+          <article class="publicacion cubiculo" [attr.data-post]="post.id">
+            <div class="p-5 sm:p-6">
+              <header class="flex items-center gap-3">
+                @if (post.userPhoto) {
+                  <img [src]="post.userPhoto" alt="" class="h-10 w-10 rounded-sm object-cover" referrerpolicy="no-referrer" />
+                } @else {
+                  <span class="avatar">{{ inicial(post.userName) }}</span>
+                }
+                <div class="min-w-0 flex-1">
+                  <p class="font-medium text-monitor truncate">{{ post.userName }}</p>
+                  <p class="text-xs text-monitor-2">
+                    <time [attr.datetime]="post.createdAt">{{ hace(post.createdAt) }}</time>
+                  </p>
+                </div>
+                @if (esReciente(post.createdAt)) { <span class="ficha ficha-ambar">recién pegado</span> }
+                <span class="ficha" [class]="claseCategoria(post.category)">{{ post.category }}</span>
+              </header>
+
+              @if (post.title) { <h3 class="letrero text-2xl text-monitor mt-4">{{ post.title }}</h3> }
+              <p class="mt-2 text-monitor/90 whitespace-pre-line max-w-[70ch]">{{ post.content }}</p>
+            </div>
+
+            <footer class="flex items-center gap-1 px-3 sm:px-4 py-2 border-t border-cubiculo-2">
+              <button #likeBtn type="button" class="accion" [class.accion-activa]="hasLiked(post)"
+                      (click)="likePost(post.id, likeBtn)" [disabled]="!user || loadingLike[post.id]"
+                      [attr.aria-pressed]="hasLiked(post)"
+                      [attr.aria-label]="(hasLiked(post) ? 'Quitar like' : 'Dar like') + ', ' + (post.likes || 0) + ' likes'"
+                      [title]="user ? '' : 'Inicia sesión para dar like'">
+                <app-icono nombre="heart" [tam]="18" [relleno]="hasLiked(post)" />
+                <span class="font-mono tabular">{{ post.likes || 0 }}</span>
+              </button>
+              <button type="button" class="accion" (click)="alternarComentarios(post.id)"
+                      [attr.aria-expanded]="abiertos.has(post.id)" [attr.aria-controls]="'comentarios-' + post.id">
+                <app-icono nombre="message" [tam]="18" />
+                <span class="font-mono tabular">{{ comments[post.id]?.length || 0 }}</span>
+                <span class="hidden sm:inline">{{ abiertos.has(post.id) ? 'Ocultar comentarios' : 'Comentarios' }}</span>
+              </button>
+            </footer>
+
+            @if (abiertos.has(post.id)) {
+              <div class="comentarios" [id]="'comentarios-' + post.id" [attr.data-comentarios]="post.id">
+                @for (c of comments[post.id]; track c.id) {
+                  <div class="comentario">
+                    @if (c.userPhoto) {
+                      <img [src]="c.userPhoto" alt="" class="h-8 w-8 rounded-sm object-cover shrink-0" referrerpolicy="no-referrer" />
+                    } @else {
+                      <span class="avatar avatar-chico">{{ inicial(c.userName) }}</span>
+                    }
+                    <div class="min-w-0">
+                      <p class="text-sm"><span class="font-medium text-monitor">{{ c.userName }}</span>
+                        <span class="text-monitor-2"> · {{ hace(c.createdAt) }}</span></p>
+                      <p class="text-monitor/90 text-sm mt-0.5 whitespace-pre-line">{{ c.text }}</p>
+                    </div>
+                  </div>
+                } @empty {
+                  <p class="text-sm text-monitor-2">Nadie ha respondido todavía.</p>
+                }
+
+                @if (user) {
+                  <form class="flex gap-2 mt-3" (ngSubmit)="addComment(post.id)">
+                    <label class="flex-1">
+                      <span class="sr-only">Tu comentario</span>
+                      <input class="campo" type="text" [name]="'comentario-' + post.id" [(ngModel)]="commentInputs[post.id]" placeholder="Responde a {{ post.userName }}" />
+                    </label>
+                    <button type="submit" class="boton boton-principal !px-3" [disabled]="loadingComment[post.id] || !commentInputs[post.id]?.trim()" aria-label="Enviar comentario">
+                      <app-icono nombre="send" [tam]="18" />
+                    </button>
+                  </form>
+                } @else {
+                  <button type="button" class="mt-3 text-sm text-ambar underline" (click)="login()">Inicia sesión para responder</button>
+                }
+              </div>
+            }
+          </article>
+        } @empty {
+          @if (cargado && !errorCarga) {
+            <div class="vacio">
+              <app-icono nombre="message" [tam]="28" class="text-ambar" />
+              <p class="letrero text-2xl text-monitor mt-3">
+                {{ filtro === 'todas' ? 'El tablero está vacío' : 'Nada en ' + filtro + ' todavía' }}
+              </p>
+              <p class="text-monitor-2 mt-1">Sé el primero en pegar una pregunta.</p>
+            </div>
+          }
+        }
+      </div>
+    </main>
+
+    <!-- ============ LATERAL ============ -->
+    <aside class="lg:col-span-4">
+      <div class="lg:sticky lg:top-24 space-y-5">
+        @if (user) {
+          <div class="cubiculo p-5 flex items-center gap-3">
+            @if (user.photoURL) {
+              <img [src]="user.photoURL" alt="" class="h-12 w-12 rounded-sm object-cover" referrerpolicy="no-referrer" />
+            } @else {
+              <span class="avatar !h-12 !w-12">{{ inicial(user.displayName ?? '') }}</span>
+            }
+            <div class="min-w-0 flex-1">
+              <p class="font-medium text-monitor truncate">{{ user.displayName }}</p>
+              <a routerLink="/perfil" class="text-sm text-monitor-2 hover:text-ambar">Ver tu perfil</a>
+            </div>
+            <button type="button" class="boton boton-linea !min-h-9 !px-2.5" (click)="logout()" aria-label="Cerrar sesión">
+              <app-icono nombre="log-out" [tam]="18" />
+            </button>
+          </div>
+        }
+
+        <nav class="cubiculo p-2" aria-label="Categorías">
+          <p class="px-3 pt-2 pb-1 text-sm font-medium text-monitor">Categorías</p>
+          <ul role="list">
+            <li>
+              <button type="button" class="categoria" [class.categoria-activa]="filtro === 'todas'" [attr.aria-pressed]="filtro === 'todas'" (click)="filtro = 'todas'">
+                Todas <span class="font-mono tabular text-monitor-2">{{ posts.length }}</span>
+              </button>
+            </li>
+            @for (c of categorias; track c) {
+              <li>
+                <button type="button" class="categoria" [class.categoria-activa]="filtro === c" [attr.aria-pressed]="filtro === c" (click)="filtro = c">
+                  {{ c }} <span class="font-mono tabular text-monitor-2">{{ contarCategoria(c) }}</span>
+                </button>
+              </li>
+            }
+          </ul>
+        </nav>
+
+        <div class="cubiculo p-5 text-sm text-monitor-2">
+          <p class="text-monitor font-medium">Reglas de la casa</p>
+          <ul class="mt-2 space-y-1.5 list-disc pl-4">
+            <li>Trata a los demás como en tu cubículo de al lado.</li>
+            <li>Nada de spoilers sin avisar.</li>
+            <li>Si encuentras una oferta, compártela.</li>
+          </ul>
+        </div>
       </div>
     </aside>
-
-    <main class="forum-feed">
-
-      <div *ngIf="!user" class="login-card">
-        <h2>Inicia sesión</h2>
-        <p>Únete a la comunidad Nexos para publicar y comentar.</p>
-        <button
-          type="button"
-          (click)="login()"
-          [disabled]="loadingLogin"
-        >
-          {{ loadingLogin ? 'Cargando...' : 'Iniciar sesión con Google' }}
-        </button>
-      </div>
-
-      <div *ngIf="user" class="user-section">
-        <div class="user-info">
-          <img [src]="user.photoURL" alt="avatar">
-          <div>
-            <h3>{{ user.displayName }}</h3>
-            <span>Miembro Nexos</span>
-          </div>
-        </div>
-        <button type="button" class="logout-btn" (click)="logout()">
-          Cerrar sesión
-        </button>
-      </div>
-
-      <div *ngIf="user" class="create-post-card">
-        <h2>Crear publicación</h2>
-        <input
-          type="text"
-          placeholder="Título de la publicación"
-          [(ngModel)]="title"
-        >
-        <select [(ngModel)]="category">
-          <option value="General" class="bg-indigo-900">🎮 General</option>
-          <option value="Opiniones" class="bg-amber-500">🔥 Opiniones</option>
-          <option value="Competitivo" class="bg-fuchsia-900">⚔️ Competitivo</option>
-          <option value="Esports" class="bg-lime-950">🏆 Esports</option>
-          <option value="Ayuda" class="bg-indigo-300">🧠 Ayuda</option>
-          <option value="Recomendaciones" class="bg-pink-300">🎲 Recomendaciones</option>
-        </select>
-        <textarea
-          placeholder="Comparte tu opinión..."
-          [(ngModel)]="content"
-        ></textarea>
-        <button
-          type="button"
-          (click)="createPost()"
-          [disabled]="loadingPost"
-        >
-          {{ loadingPost ? 'Publicando...' : 'Publicar' }}
-        </button>
-      </div>
-
-      <div class="posts-section">
-        <h2>Publicaciones</h2>
-
-        <div class="post-card" *ngFor="let post of posts; trackBy: trackByPostId">
-
-          <div class="post-header">
-            <div class="post-user">
-              <div class="avatar">{{ post.userName?.charAt(0) }}</div>
-              <div>
-                <h3>{{ post.userName }}</h3>
-                <span>Jugador Nexos</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="post-content">
-            <div class="category-badge" [ngClass]="post.category">
-              {{ post.category }}
-            </div>
-            <h2>{{ post.title }}</h2>
-            <p>{{ post.content }}</p>
-          </div>
-
-          <div class="post-footer">
-            <button
-              class="action-btn"
-              [class.liked]="hasLiked(post)"
-              (click)="likePost(post.id)"
-              [disabled]="loadingLike[post.id] || hasLiked(post)"
-            >
-              {{ hasLiked(post) ? '❤️' : '🤍' }} {{ post.likes || 0 }}
-            </button>
-
-            <button type="button">
-              💬 {{ (comments[post.id]?.length) || 0 }}
-            </button>
-
-            <button type="button">🎮 Gaming</button>
-          </div>
-
-          <div class="comments-section">
-            <h4>Comentarios</h4>
-
-            <div class="comment" *ngFor="let comment of comments[post.id]; trackBy: trackByCommentId">
-              <img
-                *ngIf="comment.userPhoto"
-                [src]="comment.userPhoto"
-                class="comment-avatar"
-                alt="avatar"
-              >
-              <div class="avatar" *ngIf="!comment.userPhoto">
-                {{ comment.userName?.charAt(0) }}
-              </div>
-              <div>
-                <strong>{{ comment.userName }}</strong>
-                <p>{{ comment.text }}</p>
-              </div>
-            </div>
-
-            <div *ngIf="user" class="comment-form">
-              <input
-                type="text"
-                [(ngModel)]="commentInputs[post.id]"
-                placeholder="Escribe un comentario..."
-                (keyup.enter)="addComment(post.id)"
-              >
-              <button
-                type="button"
-                (click)="addComment(post.id)"
-                [disabled]="loadingComment[post.id]"
-              >
-                {{ loadingComment[post.id] ? '...' : 'Comentar' }}
-              </button>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-    </main>
-  </section>
+  </div>
 </div>

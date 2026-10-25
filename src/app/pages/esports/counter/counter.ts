@@ -20,13 +20,15 @@ interface Pixel {
   size: number; alpha: number; decay: number; color: string;
 }
 
+import { EsportsVista } from '../esports-vista';
+
 @Component({
   selector: 'app-counter',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, EsportsVista],
   templateUrl: './counter.html',
 })
-export class Counter implements OnInit, AfterViewInit, OnDestroy {
+export class Counter implements OnInit, OnDestroy {
   @ViewChild('pixelCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
 
   private pandaService = inject(PandaScoreService);
@@ -67,7 +69,7 @@ export class Counter implements OnInit, AfterViewInit, OnDestroy {
 
   iniciarTracker() {
     this.isLoadingMatches.set(true);
-    this.refreshSub = timer(0, 300000).pipe(
+    this.refreshSub = timer(0, 60_000).pipe(
       switchMap(() => this.pandaService.getCS2Matches())
     ).subscribe({
       next: (data) => {
@@ -102,6 +104,10 @@ export class Counter implements OnInit, AfterViewInit, OnDestroy {
   prevSlide() { this.currentSlide.update(v => (v - 1 + this.historySteps.length) % this.historySteps.length); }
 
   private typeText(text: string) {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      this.displayText.set(text);
+      return;
+    }
     if (this.typeInterval) { clearInterval(this.typeInterval); this.typeInterval = null; }
     this.displayText.set('');
     let i = 0;
@@ -121,46 +127,8 @@ export class Counter implements OnInit, AfterViewInit, OnDestroy {
   private spawnInterval = 0;
   private ctx!: CanvasRenderingContext2D;
 
-  ngAfterViewInit(): void {
-    const canvas = this.canvasRef.nativeElement;
-    this.ctx = canvas.getContext('2d')!;
-    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
-    resize();
-    window.addEventListener('resize', resize);
-    const spawnBlast = () => {
-      const cx = Math.random() * canvas.width;
-      const cy = Math.random() * canvas.height;
-      for (let i = 0; i < 20; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = 0.5 + Math.random() * 2.5;
-        const color = this.pixelColors[Math.floor(Math.random() * this.pixelColors.length)];
-        this.pixels.push({
-          x: cx, y: cy, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
-          size: 2 + Math.random() * 4, alpha: 0.6 + Math.random() * 0.4, decay: 0.01 + Math.random() * 0.015, color
-        });
-      }
-    };
-    this.spawnInterval = window.setInterval(spawnBlast, 400);
-    const loop = () => {
-      this.ctx.fillStyle = 'rgba(8, 8, 12, 0.2)';
-      this.ctx.fillRect(0, 0, canvas.width, canvas.height);
-      this.pixels = this.pixels.filter(p => p.alpha > 0.01);
-      for (const p of this.pixels) {
-        p.x += p.vx; p.y += p.vy; p.vx *= 0.98; p.vy *= 0.98;
-        p.alpha -= p.decay;
-        this.ctx.globalAlpha = Math.max(0, p.alpha);
-        this.ctx.fillStyle = p.color;
-        this.ctx.fillRect(p.x, p.y, p.size, p.size);
-      }
-      this.ctx.globalAlpha = 1;
-      this.animFrameId = requestAnimationFrame(loop);
-    };
-    loop();
-  }
 
   ngOnDestroy(): void {
-    cancelAnimationFrame(this.animFrameId);
-    clearInterval(this.spawnInterval);
     if (this.typeInterval) clearInterval(this.typeInterval);
     this.refreshSub?.unsubscribe();
   }

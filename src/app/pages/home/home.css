@@ -1,147 +1,132 @@
-.nexos-lanyards-section {
-  position: relative;
-  width: 100%;
-  padding: 70px 0 60px;
-  /* Un azul casi negro que armoniza con tu paleta general */
-  background-color: #06060e;
-  overflow: hidden;
-  border-top: 1px solid rgba(255, 255, 255, 0.03);
-}
-
-/* Brillo radial sutil para dar profundidad sin deslumbrar */
-.nexos-bg-glow {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: 140%;
-  height: 100%;
-  background: radial-gradient(circle at 50% 30%, rgba(124, 58, 237, 0.08) 0%, transparent 60%);
-  transform: translateX(-50%);
-  pointer-events: none;
-}
-
-/* Encabezado de lanyards */
-.nexos-lanyards-header {
-  position: relative;
-  z-index: 5;
-  text-align: center;
-}
-
-/* El texto de encabezado */
-.nexos-lanyards-header .eyebrow {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 18px;
-  letter-spacing: 4px;
-  color: #f0abfc;
-  /* Púrpura de tu marca */
-  text-transform: uppercase;
-  margin-bottom: 0px;
-  display: block;
-}
-
-/* El título principal */
-.nexos-lanyards-header h2 {
-  font-size: clamp(32px, 5vw, 52px);
-  font-weight: 900;
-  color: #fff;
-  margin: 0 0 30px;
-  letter-spacing: -0.03em;
-}
-
-/* El gradiente de texto para "Lanyards" */
-.nexos-lanyards-header h2 span {
-  /* Gradiente suave de azul a esmeralda */
-  background: linear-gradient(to right, #cf8ae4, #b910b9);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-
-/* Indicador de interacción dinámico */
-.nexos-lanyards-hint {
-  position: relative;
-  z-index: 5;
+/* ---------- buscador del mostrador ---------- */
+.buscador {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  margin-top: 2px;
+  gap: 0.75rem;
+  height: 4rem;
+  background: var(--color-pared-2);
+  border: 1px solid var(--color-cubiculo-2);
+  border-radius: var(--radius-cubiculo);
+  transition: border-color 0.2s, box-shadow 0.3s var(--ease-salida);
 }
-
-/* La barra de arrastre con animación sutil */
-.drag-indicator {
-  width: 1000px;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  position: relative;
-  overflow: hidden;
+.buscador:hover { border-color: #4b3a78; }
+.buscador:focus-within {
+  border-color: var(--color-ambar);
+  box-shadow: 0 10px 30px -12px rgb(255 176 32 / 0.35);
 }
-
-/* La barra animada que se desliza para indicar que se puede arrastrar */
-.drag-indicator::after {
-  content: '';
-  position: absolute;
-  width: 150px;
+.buscador input {
+  flex: 1;
+  min-width: 0;
   height: 100%;
-  background: #6d0ee9;
-  animation: slide-hint 2s ease-in-out infinite;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--color-monitor);
+  font-size: 1.15rem;
 }
+.buscador input::-webkit-search-cancel-button { filter: invert(0.7); }
 
-/* Animación para la barra de arrastre */
-@keyframes slide-hint {
-  0% {
-    left: -20%;
-  }
-
-  100% {
-    left: 110%;
-  }
+.resultados {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(100% + 0.5rem);
+  z-index: 20;
+  padding: 0.35rem;
+  background: var(--color-cubiculo);
+  border: 1px solid var(--color-cubiculo-2);
+  border-radius: var(--radius-cubiculo);
+  box-shadow: 0 24px 40px -16px rgb(0 0 0 / 0.75);
+  max-height: 24rem;
+  overflow-y: auto;
 }
-
-/* El texto de la pista debajo de la barra */
-.nexos-lanyards-hint span {
-  font-size: 10px;
-  letter-spacing: 2px;
-  color: rgba(255, 255, 255, 0.3);
+.resultado {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 3px;
+  cursor: pointer;
 }
+.resultado-activo { background: var(--color-cubiculo-2); }
 
-/* El lienzo de los lanyards con un tamaño fijo y un cursor de agarre */
-#nexos-lanyard-canvas {
-  display: block;
-  width: 100%;
-  height: 600px;
-  margin-top: -20px;
-  cursor: grab;
+.escritura::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: var(--color-ambar);
+  animation: cursor 1s steps(1) infinite;
 }
+/* Mientras escribe o borra, el cursor queda fijo; solo parpadea en las pausas */
+.escritura.escribiendo::after { animation: none; }
+@keyframes cursor { 50% { opacity: 0; } }
 
-/* La pista de logotipos debajo del lienzo */
-.logo-track {
+/* ---------- pared de afiches ---------- */
+.pared {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.75rem 1.25rem;
+  perspective: 1200px;
+}
+.tablero {
+  grid-column: 1 / -1;
+  background: var(--color-pared-2);
+  border: 1px solid rgb(255 176 32 / 0.45);
+  --giro: -1.2deg;
+}
+.partido { background: var(--color-cubiculo); border: 1px solid var(--color-cubiculo-2); }
+.dudas { background: var(--color-nexos); --giro: -0.6deg; }
+.dudas .text-monitor-2 { color: #e2d8ff; }
+.afiche a { color: inherit; text-decoration: none; }
+
+.fila-precio {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px dashed rgb(255 176 32 / 0.25);
+}
+li:last-child > .fila-precio { border-bottom: 0; }
+.fila-precio:hover .text-monitor { color: var(--color-ambar); }
+
+/* ---------- cinta de logos ---------- */
+.cinta {
+  border-block: 1px solid var(--color-cubiculo-2);
+  background: var(--color-pared-2);
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+.cinta-pista {
   display: flex;
   width: max-content;
-  animation: logoLoop 25s linear infinite;
+  animation: desfile 60s linear infinite;
 }
+.cinta:hover .cinta-pista { animation-play-state: paused; }
+.cinta-grupo { display: flex; align-items: center; gap: 4.5rem; padding: 1.5rem 2.25rem; }
+.cinta img { filter: brightness(0) invert(0.85); opacity: 0.65; transition: opacity 0.2s, filter 0.2s; }
+.cinta img:hover { opacity: 1; filter: none; }
+@keyframes desfile { to { transform: translateX(-50%); } }
 
-/* Pausa la animación al pasar el mouse para que los usuarios puedan apreciar los logotipos */
-.logo-track:hover {
-  animation-play-state: paused;
+/* ---------- recién llegados ---------- */
+.llegado-texto {
+  background: linear-gradient(to top, rgb(20 18 28 / 0.95) 0%, rgb(20 18 28 / 0.75) 55%, transparent 100%);
+  padding-top: 4rem;
 }
+.llegado img { transition: transform 0.9s var(--ease-salida); }
+.llegado:hover img { transform: scale(1.04); }
 
-/* El contenedor de los logotipos con espacio entre ellos */
-.logo-group {
-  display: flex;
-  gap: 4rem;
-  padding: 0 2rem;
-  flex-shrink: 0;
-}
+/* ---------- torneos ---------- */
+.torneo { background: var(--color-cubiculo); color: inherit; text-decoration: none; }
+.torneo-velo { background: linear-gradient(to top, rgb(20 18 28 / 0.97) 15%, rgb(20 18 28 / 0.35) 60%, rgb(20 18 28 / 0.1)); }
+.torneo img { transition: transform 0.9s var(--ease-salida); }
+.torneo:hover img { transform: scale(1.06); }
 
-/* Animación para hacer que los logotipos se desplacen suavemente de derecha a izquierda */
-@keyframes logoLoop {
-  from {
-    transform: translateX(0);
-  }
+#nexos-lanyard-canvas { touch-action: pan-y; }
 
-  to {
-    transform: translateX(var(--loop-offset, -100%));
-  }
+@media (prefers-reduced-motion: reduce) {
+  .cinta-pista { animation: none; }
+  .escritura::after { animation: none; }
 }

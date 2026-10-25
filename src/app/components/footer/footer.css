@@ -1,0 +1,2 @@
+.pie-enlace { color: var(--color-monitor-2); text-decoration: none; transition: color 0.2s; }
+.pie-enlace:hover { color: var(--color-ambar); text-decoration: underline; }

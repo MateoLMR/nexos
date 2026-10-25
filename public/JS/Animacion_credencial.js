@@ -43,12 +43,17 @@ class NexosLanyards {
   resize() {
     const container = this.canvas.parentElement;
     this.canvas.width = container.clientWidth;
-    this.canvas.height = 700;
+    // Escala para que entre una tarjeta (300px) y su separación en cada espacio
+    const espacio = this.canvas.width / (this.creators.length + 1);
+    this.escala = Math.min(1, (espacio - 24) / 300);
+    // Reposo: la tarjeta cuelga con una cuerda corta y el canvas mide lo justo
+    this.restY = 70 + 200 * this.escala;
+    this.canvas.height = Math.ceil(this.restY + 200 * this.escala + 50);
   }
 
   drawGlobalGrid() {
     this.ctx.save();
-    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+    this.ctx.strokeStyle = 'rgba(232, 238, 255, 0.04)';
     this.ctx.lineWidth = 1;
 
     // Líneas verticales
@@ -77,7 +82,7 @@ class NexosLanyards {
           x: newX,
           y: 0,
           targetX: newX,
-          targetY: 350,
+          targetY: this.restY,
           vx: 0,
           vy: 0,
           data: data,
@@ -90,18 +95,21 @@ class NexosLanyards {
   }
 
   // --- DIBUJO DE CÓDIGO DE BARRAS ---
-  drawBarcode(ctx, x, y, width, height) {
+  drawBarcode(ctx, x, y, width, height, card) {
+    // El patrón se calcula una sola vez por tarjeta para que no parpadee
+    if (!card.barras) {
+      card.barras = [];
+      let cx = 0;
+      while (cx < width) {
+        const w = Math.random() * 3 + 1;
+        if (cx + w < width) card.barras.push([cx, w]);
+        cx += w + Math.random() * 4;
+      }
+    }
     ctx.save();
     ctx.translate(x, y);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-    let currentX = 0;
-    while (currentX < width) {
-      const w = Math.random() * 3 + 1;
-      if (currentX + w < width) {
-        ctx.fillRect(currentX, 0, w, height);
-      }
-      currentX += w + (Math.random() * 4);
-    }
+    ctx.fillStyle = 'rgba(232, 238, 255, 0.3)';
+    card.barras.forEach(([bx, bw]) => ctx.fillRect(bx, 0, bw, height));
     ctx.restore();
   }
 
@@ -115,6 +123,8 @@ class NexosLanyards {
     ctx.save();
     ctx.translate(targetX, targetY);
     ctx.rotate(card.vx * 0.006);
+    // En pantallas angostas las credenciales se achican para no montarse
+    ctx.scale(this.escala, this.escala);
 
     // Sombra proyectada
     ctx.shadowColor = 'rgba(0,0,0,0.5)';
@@ -122,9 +132,9 @@ class NexosLanyards {
     ctx.shadowOffsetY = 20;
 
     // Cuerpo de la tarjeta
-    ctx.fillStyle = '#1e1e2e';
+    ctx.fillStyle = '#2A1F45';
     ctx.beginPath();
-    ctx.roundRect(-w / 2, -h / 2, w, h, 20);
+    ctx.roundRect(-w / 2, -h / 2, w, h, 6);
     ctx.fill();
 
     // Reset sombras para detalles internos
@@ -133,13 +143,13 @@ class NexosLanyards {
 
     // Borde de color (Glow)
     ctx.strokeStyle = data.color;
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 2;
     ctx.stroke();
 
     // Banda superior estética
-    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    ctx.fillStyle = 'rgba(232,238,255,0.05)';
     ctx.beginPath();
-    ctx.roundRect(-w / 2, -h / 2, w, 60, { tl: 20, tr: 20, bl: 0, br: 0 });
+    ctx.roundRect(-w / 2, -h / 2, w, 60, [6, 6, 0, 0]);
     ctx.fill();
 
     // Foto de perfil
@@ -150,33 +160,33 @@ class NexosLanyards {
     if (img) {
       ctx.drawImage(img, -50, -90, 100, 100);
     } else {
-      ctx.fillStyle = '#45475a';
+      ctx.fillStyle = '#3A2C5E';
       ctx.fill();
     }
     ctx.restore();
 
     // Texto: Nombre
-    ctx.fillStyle = '#ffffff';
-    ctx.font = ctx.font = '900 20px "Outfit", "Segoe UI", sans-serif';
+    ctx.fillStyle = '#E8EEFF';
+    ctx.font = '800 22px "Bricolage Grotesque Variable", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(data.name.toUpperCase(), 0, 50);
+    ctx.fillText(data.name, 0, 50);
 
     // Texto: Rol
     ctx.fillStyle = data.accent;
-    ctx.font = '400 18px "Space Mono", "Consolas", monospace';
+    ctx.font = '500 16px "Onest Variable", sans-serif';
     ctx.fillText(data.role, 0, 75);
 
     // Código de barras decorativo
-    this.drawBarcode(ctx, -w / 2 + 30, 110, w - 60, 25);
+    this.drawBarcode(ctx, -w / 2 + 30, 110, w - 60, 25, card);
 
     // Badge inferior rediseñado
     ctx.fillStyle = data.color;
     ctx.beginPath();
-    ctx.roundRect(-w / 2 + 20, 145, w - 40, 25, 6);
+    ctx.roundRect(-w / 2 + 20, 145, w - 40, 25, 3);
     ctx.fill();
 
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 14px sans-serif';
+    ctx.fillStyle = data.color === '#6D3BD2' ? '#FFFFFF' : '#1C1300';
+    ctx.font = '600 13px "JetBrains Mono Variable", monospace';
     ctx.fillText(data.badge.toUpperCase(), 0, 162);
 
     ctx.restore();
@@ -187,14 +197,14 @@ class NexosLanyards {
     ctx.beginPath();
     ctx.lineWidth = 6;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = '#52215c'; // Color de cuerda más neutro
+    ctx.strokeStyle = '#3A2C5E'; // Color de cuerda más neutro
     ctx.moveTo(card.x, 0);
-    ctx.bezierCurveTo(card.x, 100, card.targetX, 100, card.targetX, card.targetY - 160);
+    ctx.bezierCurveTo(card.x, 100, card.targetX, 100, card.targetX, card.targetY - 160 * this.escala);
     ctx.stroke();
 
     // El gancho que une la cuerda con la tarjeta
     ctx.beginPath();
-    ctx.arc(card.targetX, card.targetY - 160, 5, 0, Math.PI * 2);
+    ctx.arc(card.targetX, card.targetY - 160 * this.escala, 5, 0, Math.PI * 2);
     ctx.fillStyle = card.data.color;
     ctx.fill();
   }
@@ -212,7 +222,7 @@ class NexosLanyards {
         card.vy = (this.mouse.y - card.targetY) * 0.2;
       } else {
         const dx = card.x - card.targetX;
-        const dy = 350 - card.targetY;
+        const dy = this.restY - card.targetY;
         card.vx += dx * 0.01;
         card.vy += dy * 0.01;
         card.vx *= 0.92;
@@ -226,6 +236,8 @@ class NexosLanyards {
       this.drawCard(card);
     });
 
+    // Si el canvas ya no está en la página (se cambió de ruta), se detiene el ciclo
+    if (!this.canvas.isConnected) return;
     requestAnimationFrame(() => this.animate());
   }
 
@@ -236,7 +248,7 @@ class NexosLanyards {
     this.cards.forEach(card => {
       const dx = mx - card.targetX;
       const dy = my - card.targetY;
-      if (Math.abs(dx) < 110 && Math.abs(dy) < 160) {
+      if (Math.abs(dx) < 150 * this.escala && Math.abs(dy) < 200 * this.escala) {
         card.isDragged = true;
       }
     });

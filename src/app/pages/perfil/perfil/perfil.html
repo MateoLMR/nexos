@@ -1,24 +1,64 @@
-<div class="perfil-container" *ngIf="profileData">
+<div class="local pt-12 pb-10 max-w-4xl">
+  <h1 class="letrero text-[clamp(2.75rem,6vw,4.5rem)] text-monitor">Tu cubículo</h1>
 
-  <!-- FOTO -->
-  <img
-    [src]="profileData.photo"
-    class="perfil-foto"
-  >
+  @switch (estado) {
+    @case ('cargando') {
+      <div class="mt-10 cargando-bloque h-64"></div>
+    }
 
-  <!-- NOMBRE -->
-  <h1 class="perfil-nombre">
-    {{ profileData.name }}
-  </h1>
+    @case ('sin-sesion') {
+      <div class="mt-10 vacio">
+        <app-icono nombre="monitor" [tam]="32" class="text-ambar" />
+        <p class="letrero text-2xl text-monitor mt-3">Este cubículo está libre</p>
+        <p class="text-monitor-2 mt-1 max-w-md">Entra con Google para tener tu perfil, publicar en el tablero y dar like.</p>
+        <button type="button" class="boton boton-principal mt-6" (click)="sentarse()" [disabled]="entrando">
+          <app-icono nombre="log-in" [tam]="18" /> {{ entrando ? 'Entrando…' : 'Sentarse' }}
+        </button>
+      </div>
+    }
 
-  <!-- EMAIL -->
-  <p class="perfil-email">
-    {{ profileData.email }}
-  </p>
+    @case ('error') {
+      <div class="mt-10 vacio">
+        <app-icono nombre="alert" [tam]="28" class="text-alerta" />
+        <p class="letrero text-2xl text-monitor mt-3">No pudimos cargar tu perfil</p>
+        <p class="text-monitor-2 mt-1">Revisa tu conexión y recarga la página.</p>
+      </div>
+    }
 
-  <!-- BIO -->
-  <div class="perfil-bio">
-    {{ profileData.bio }}
-  </div>
+    @case ('listo') {
+      @if (profileData; as p) {
+        <section class="mt-10 cubiculo-perfil" aria-label="Tu perfil">
+          <div class="pantalla">
+            @if (p.photo) {
+              <img [src]="p.photo" alt="" class="h-28 w-28 sm:h-32 sm:w-32 rounded-sm object-cover" referrerpolicy="no-referrer" />
+            } @else {
+              <span class="h-28 w-28 rounded-sm bg-nexos grid place-items-center letrero text-5xl text-white">{{ p.name.charAt(0) }}</span>
+            }
+            <div class="min-w-0 flex-1">
+              <h2 data-entra class="letrero text-4xl sm:text-5xl text-monitor break-words">{{ p.name }}</h2>
+              @if (p.email) { <p data-entra class="mt-1 text-monitor-2 break-all">{{ p.email }}</p> }
+              <p data-entra class="mt-4 text-lg text-monitor/90">{{ p.bio }}</p>
+            </div>
+          </div>
 
+          <dl class="grid grid-cols-1 sm:grid-cols-2 border-t border-cubiculo-2">
+            <div class="p-5 sm:border-r border-cubiculo-2">
+              <dt class="text-xs text-monitor-2 flex items-center gap-2">Tiempo en esta sesión <span class="ficha ficha-vivo"><span class="punto-vivo"></span> ocupado</span></dt>
+              <dd class="font-mono text-3xl text-vivo tabular mt-1">{{ tiempo() }}</dd>
+            </div>
+            <div class="p-5 border-t sm:border-t-0 border-cubiculo-2">
+              <dt class="text-xs text-monitor-2">Miembro desde</dt>
+              <dd class="text-xl text-monitor mt-1">{{ miembroDesde(p.createdAt) }}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <div class="mt-6 flex flex-wrap gap-3">
+          <a routerLink="/foro" class="boton boton-principal"><app-icono nombre="message" [tam]="18" /> Ir al tablero</a>
+          <a routerLink="/juegos" class="boton boton-linea"><app-icono nombre="gamepad" [tam]="18" /> Ver juegos</a>
+          <button type="button" class="boton boton-linea ml-auto" (click)="levantarse()"><app-icono nombre="log-out" [tam]="18" /> Cerrar sesión</button>
+        </div>
+      }
+    }
+  }
 </div>

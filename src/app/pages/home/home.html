@@ -1,287 +1,224 @@
-<!-- Este es el componente home tiene el llamado a home.ts y el diseño con tailwind de toda la pagina -->
-<div class="overflow-x-hidden bg-gray-900">
-  <div class="relative isolate overflow-hidden pt-40 pb-24 sm:pt-85 sm:pb-40">
-    <div class="mx-auto max-w-7xl px-6 lg:px-8">
-      <div class="flex flex-col items-center text-center">
-        <h1 class="text-4xl font-bold tracking-tight text-white sm:text-8xl mb-5">
-          Bienvenido a <span class="text-fuchsia-300">Nexos</span>
-        </h1>
-        <p class="text-2xl sm:text-4xl font-semibold text-fuchsia-300 min-h-[80px]">
-          Aquí puedes <span id="Escritura" class="border-r-4 border-fuchsia-500 pr-1"></span>
-        </p>
-      </div>
-    </div>
-    <div
-      class="mt-75 w-full overflow-hidden [mask-image:_linear-gradient(to_right,transparent_0,_black_128px,_black_calc(100%-128px),transparent_100%)]">
-      <div class="logo-track">
-        <div class="logo-group">
-          <img src="/Logos-Juegos/Overwatch.png" width="64" height="64" loading="lazy"
-            class="h-16 w-auto brightness-0 invert opacity-70 hover:opacity-100 transition-all" alt="Overwatch">
-          <img src="/Logos-Juegos/Warcraft.png" width="64" height="64" loading="lazy"
-            class="h-16 w-auto brightness-0 invert opacity-70 hover:opacity-100 transition-all" alt="Warcraft">
-          <img src="/Logos-Juegos/Assasin.png" width="64" height="64" loading="lazy"
-            class="h-16 w-auto brightness-0 invert opacity-70 hover:opacity-100 transition-all" alt="Assassin's Creed">
-          <img src="/Logos-Juegos/lol.png" width="64" height="64" loading="lazy"
-            class="h-16 w-auto brightness-0 invert opacity-70 hover:opacity-100 transition-all" alt="League of Legends">
-          <img src="/Logos-Juegos/Gta.png" width="64" height="64" loading="lazy"
-            class="h-16 w-auto brightness-0 invert opacity-70 hover:opacity-100 transition-all" alt="GTA">
-          <img src="/Logos-Juegos/Rainbow.png" width="64" height="64" loading="lazy"
-            class="h-16 w-auto brightness-0 invert opacity-70 hover:opacity-100 transition-all" alt="Rainbow Six">
-          <img src="/Logos-Juegos/Carlitosduty.png" width="64" height="64" loading="lazy"
-            class="h-16 w-auto brightness-0 invert opacity-70 hover:opacity-100 transition-all" alt="Call of Duty">
-          <img src="/Logos-Juegos/ark.png" width="64" height="64" loading="lazy"
-            class="h-16 w-auto brightness-0 invert opacity-70 hover:opacity-100 transition-all" alt="ARK">
-          <img src="/Logos-Juegos/CSGO.png" width="64" height="64" loading="lazy"
-            class="h-16 w-auto brightness-0 invert opacity-70 hover:opacity-100 transition-all" alt="CS:GO">
+<div #raiz class="overflow-x-clip">
+
+  <!-- ============ MOSTRADOR (primer pantallazo) ============ -->
+  <section class="local grid grid-cols-1 lg:grid-cols-12 gap-x-10 gap-y-14 pt-14 pb-20 lg:pt-20 lg:min-h-[min(calc(100svh-4rem),56rem)] items-center">
+
+    <div class="lg:col-span-7">
+      <h1 data-entra class="letrero text-[clamp(3rem,7.2vw,6rem)] text-monitor">
+        ¿Qué buscas<br /><span class="letrero-ambar">hoy?</span>
+      </h1>
+      <p data-entra class="mt-6 text-lg sm:text-xl text-monitor-2 max-w-xl">
+        Pasa y siéntate. Aquí vienes a
+        <span #escritura class="text-monitor font-medium escritura" aria-live="off">resolver una duda.</span>
+      </p>
+
+      <!-- Buscador -->
+      <div data-entra class="mt-9 max-w-2xl relative">
+        <label for="buscar-mostrador" class="sr-only">Buscar un juego por nombre o género</label>
+        <div class="buscador">
+          <app-icono nombre="search" [tam]="22" class="text-monitor-2 ml-4" />
+          <input id="buscar-mostrador" type="search" autocomplete="off" role="combobox"
+                 placeholder="Un juego, un género, una duda…"
+                 [attr.aria-expanded]="abierto()" aria-controls="lista-mostrador"
+                 [attr.aria-activedescendant]="activo() >= 0 ? 'opcion-' + activo() : null"
+                 [value]="consulta()" (input)="alEscribir($any($event.target).value)"
+                 (focus)="abierto.set(true)" (blur)="cerrarLuego()" (keydown)="alTeclear($event)" />
+          <span class="hidden sm:inline-flex ficha ficha-tenue mr-3">Enter</span>
         </div>
+
+        @if (abierto()) {
+          <ul id="lista-mostrador" role="listbox" class="resultados" aria-label="Juegos en el local">
+            @for (j of resultados(); track j.id; let i = $index) {
+              <li [id]="'opcion-' + i" role="option" [attr.aria-selected]="i === activo()"
+                  class="resultado" [class.resultado-activo]="i === activo()"
+                  (mousedown)="$event.preventDefault()" (click)="irAJuego(j.id)" (mouseenter)="activo.set(i)">
+                <img [src]="j.imagen" alt="" class="h-11 w-16 object-cover rounded-sm shrink-0" />
+                <span class="min-w-0 flex-1">
+                  <span class="block font-medium text-monitor truncate">{{ j.titulo }}</span>
+                  <span class="block text-sm text-monitor-2">{{ j.tipo }}</span>
+                </span>
+                <app-icono nombre="arrow-right" [tam]="18" class="text-monitor-2" />
+              </li>
+            } @empty {
+              <li class="px-4 py-4 text-monitor-2">
+                @if (juegos().length) {
+                  Ese juego aún no está en el local.
+                  <a routerLink="/foro" class="text-ambar underline" (mousedown)="$event.preventDefault()">Pregúntalo en el foro</a>
+                } @else {
+                  Cargando juegos…
+                }
+              </li>
+            }
+          </ul>
+        }
       </div>
+
+      <nav data-entra aria-label="Atajos" class="mt-5 flex flex-wrap gap-2">
+        <a routerLink="/foro" class="boton boton-principal"><app-icono nombre="message" [tam]="18" /> Hacer una pregunta</a>
+        <a routerLink="/juegos" class="boton boton-linea"><app-icono nombre="tag" [tam]="18" /> Ver precios</a>
+        <a routerLink="/esports" class="boton boton-linea"><app-icono nombre="radio" [tam]="18" /> Partidos en vivo</a>
+      </nav>
     </div>
 
-    <!-- El div de las cards de recomendados la funcionalidad esta en home.ts el diseño es con tailwind -->
-    <div class="bg-gray-900 pt-16 pb-0 sm:pt-10">
-      <div class="relative isolate overflow-hidden bg-amber-50 py-16 sm:py-24">
-        <div class="mx-auto max-w-7xl px-10 lg:px-8">
-          <div class="flex flex-col lg:flex-row items-center justify-between gap-16">
+    <!-- Pared de afiches -->
+    <div class="lg:col-span-5 pared" aria-label="Lo que hay hoy en el local">
 
-            <div class="max-w-xl text-left lg:w-1/2">
-              <h2 class="text-4xl font-extrabold tracking-tight text-fuchsia-900 sm:text-6xl">
-                Recomendados de la semana
-              </h2>
-              <p class="mt-6 text-2xl leading-9 text-fuchsia-900 opacity-90">
-                Una exploracion a los juegos descubiertos por la comunidad esta semana.
+      <!-- Precios de hoy -->
+      <article appAfiche class="afiche tablero">
+        <header class="flex items-center justify-between gap-3 px-5 pt-5">
+          <h2 class="letrero text-2xl text-ambar">Precios de hoy</h2>
+          <app-icono nombre="tag" [tam]="20" class="text-ambar" />
+        </header>
+        <ul class="px-5 pb-4 pt-3 grid" role="list">
+          @if (precios(); as filas) {
+            @for (f of filas; track f.id; let i = $index) {
+              <li>
+                <a [routerLink]="['/juego', f.id]" class="fila-precio">
+                  <span class="min-w-0">
+                    <span class="block truncate text-monitor font-medium">{{ f.titulo }}</span>
+                    <span class="block text-xs text-monitor-2">{{ f.tienda }}</span>
+                  </span>
+                  <span class="font-mono text-ambar text-lg tabular whitespace-nowrap" [appContador]="f.precio" [contadorRetraso]="0.6 + i * 0.12">{{ f.precio }}</span>
+                </a>
+              </li>
+            } @empty {
+              <li class="py-3 text-sm text-monitor-2">El tablero no cargó. Mira los precios en <a routerLink="/juegos" class="text-ambar underline">Juegos</a>.</li>
+            }
+          } @else {
+            @for (n of [1, 2, 3, 4]; track n) {
+              <li class="py-2.5"><div class="cargando-bloque h-9"></div></li>
+            }
+          }
+        </ul>
+      </article>
+
+      <!-- Partido -->
+      <article appAfiche class="afiche afiche-der partido">
+        @if (partido(); as p) {
+          <a routerLink="/esports" class="block p-5">
+            <div class="flex items-center justify-between gap-2">
+              @if (p.enVivo) {
+                <span class="ficha ficha-vivo"><span class="punto-vivo"></span> en vivo</span>
+              } @else {
+                <span class="ficha ficha-nexos">{{ p.hora }}</span>
+              }
+              <span class="text-xs text-monitor-2 truncate">{{ p.juego }}</span>
+            </div>
+            <p class="letrero text-[1.9rem] text-monitor mt-3">{{ p.a }} <span class="text-monitor-2 text-xl">vs</span> {{ p.b }}</p>
+            <p class="mt-1 text-sm text-monitor-2 truncate">{{ p.liga }}</p>
+          </a>
+        } @else if (partido() === null) {
+          <a routerLink="/esports" class="block p-5">
+            <span class="ficha ficha-nexos">eSports</span>
+            <p class="letrero text-2xl text-monitor mt-3">Mira la cartelera de torneos</p>
+          </a>
+        } @else {
+          <div class="p-5"><div class="cargando-bloque h-5 w-24"></div><div class="cargando-bloque h-9 mt-4"></div></div>
+        }
+      </article>
+
+      <!-- Dudas nuevas -->
+      <article appAfiche class="afiche dudas">
+        <a routerLink="/foro" class="block p-5">
+          <div class="flex items-center justify-between">
+            <h2 class="letrero text-xl text-monitor">Dudas en el tablero</h2>
+            <span class="font-mono text-monitor tabular" [appContador]="totalDudas()">{{ totalDudas() }}</span>
+          </div>
+          @if (dudas(); as lista) {
+            @for (d of lista; track d.id) {
+              <p class="mt-2 text-sm text-monitor-2 truncate">
+                <span class="text-monitor">{{ d.userName }}:</span> {{ d.title || d.content }}
               </p>
-              <div class="mt-6 flex items-center gap-x-5">
-                <p class="text-xl text-fuchsia-600/80 text-sm italic">
-                  Dale clic a las tarjetas para explorarlos →
-                </p>
-              </div>
-            </div>
-
-            <div class="relative h-[600px] w-full max-w-md lg:w-1/2 flex items-center justify-center"
-              id="card-swap-wrapper">
-
-              <article
-                class="card-item absolute inset-0 transition-all duration-500 ease-in-out cursor-pointer isolate flex flex-col justify-end overflow-hidden rounded-3xl bg-gray-800 px-8 pb-10 pt-80 shadow-2xl"
-                data-index="0">
-                <img src="Imagenes/grime2.png" class="absolute inset-0 -z-10 h-full w-full object-cover" />
-                <div class="absolute inset-0 -z-10 bg-gradient-to-t from-black/100 via-gray-900/60">
-                </div>
-                <time class="text-sm text-white opacity-100 uppercase tracking-widest">Marzo
-                  31, 2026</time>
-                <h3 class="mt-3 text-4xl font-bold text-white">
-                  GRIME II
-                </h3>
-                <p class="mt-5 text-lg text-white/100 leading-relaxed">Es un videojuego de acción y
-                  aventura de estilo metroidvania con una atmósfera surrealista. Explora un mundo
-                  alienígena oscuro y hostil, enfrentándote a criaturas grotescas y desafiantes
-                  mientras descubres los secretos de este entorno misterioso. </p>
-
-                <!-- Asi es como se llama la pagina del juego que este al darle clic en ver detalles con a routrerlink -->
-                <a [routerLink]="['/juego', juegoTarjeta1?.id]" *ngIf="juegoTarjeta1"
-                  class="mt-6 inline-block px-7 py-2 bg-purple-950 hover:bg-purple-700/70 text-white rounded-2xl transition-colors w-max cursor-pointer relative z-50">
-                  Ver Detalles
-                </a>
-              </article>
-
-              <article
-                class="card-item absolute inset-0 transition-all duration-500 ease-in-out cursor-pointer isolate flex flex-col justify-end overflow-hidden rounded-3xl bg-gray-800 px-8 pb-10 pt-80 shadow-2xl opacity-0"
-                data-index="1">
-                <img src="Imagenes/hozy.png" class="absolute inset-0 -z-10 h-full w-full object-cover" />
-                <div class="absolute inset-0 -z-10 bg-gradient-to-t from-black/100 via-gray-900/60">
-                </div>
-                <time class="text-sm text-white opacity-100 uppercase tracking-widest">Marzo 30,
-                  2026</time>
-                <h3 class="mt-3 text-4xl font-bold text-white">
-                  Hozy
-                </h3>
-                <p class="mt-5 text-lg text-white/100 leading-relaxed">Es un simulador de relajación
-                  y
-                  decoración "cozy" donde restauras un vecindario olvidado habitación por
-                  habitación.
-                  El juego se centra en limpiar, pintar y amueblar casas abandonadas.mediante
-                  mecánicas físicas satisfactorias, sin temporizadores ni presiones</p>
-
-                <a [routerLink]="['/juego', juegoTarjeta2?.id]"
-                  class="mt-6 inline-block px-7 py-2 bg-purple-950 hover:bg-purple-700/70 text-white rounded-2xl transition-colors w-max cursor-pointer">
-                  Ver Detalles
-                </a>
-              </article>
-
-              <article
-                class="card-item absolute inset-0 transition-all duration-500 ease-in-out cursor-pointer isolate flex flex-col justify-end overflow-hidden rounded-3xl bg-gray-800 px-8 pb-10 pt-80 shadow-2xl opacity-0"
-                data-index="2">
-                <img src="Imagenes/monsterhunter.png" class="absolute inset-0 -z-10 h-full w-full object-cover" />
-                <div class="absolute inset-0 -z-10 bg-gradient-to-t from-black/100 via-gray-900/60">
-                </div>
-                <time class="text-sm text-white opacity-100 uppercase tracking-widest">Marzo 12,
-                  2026</time>
-                <h3 class="mt-3 text-4xl font-bold text-white">
-                  Monster Hunter Stories 3: Twisted
-                  Reflection
-                </h3>
-                <p class="mt-5 text-lg text-white/100 leading-relaxed">Es la tercera entrega de la
-                  serie
-                  RPG spin-off de Monster Hunter. En este título, asumes el papel de un "Monster
-                  Rider" que forma vínculos con monstruos en lugar de cazarlos.</p>
-
-                <a [routerLink]="['/juego', juegoTarjeta3?.id]"
-                  class="mt-6 inline-block px-7 py-2 bg-purple-950 hover:bg-purple-700/70 text-white rounded-2xl transition-colors w-max cursor-pointer">
-                  Ver Detalles
-                </a>
-              </article>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Seccion de los torneos es simple solo tiene un par de animaciones basicas con GSAP y el diseño con tailwind -->
-  <section class="bg-gray-900 pb-25 px-50">
-    <div class="mx-auto max-w-8xl">
-      <div class="mb-16 text-center">
-        <h2 class="text-6xl font-bold text-white tracking-tight italic">NEXOS <span
-            class="text-fuchsia-300">eSPORTS</span></h2>
-        <p class="mt-4 text-2xl text-gray-400">Sigue la huella digital de los torneos más grandes del mundo.
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-
-        <div
-          class="group relative overflow-hidden rounded-xl bg-black h-96 border border-white/10 cursor-pointer transition-all duration-300 hover:-translate-y-3 hover:shadow-[0_20px_50px_rgba(255,70,85,0.3)]">
-          <div
-            class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none"
-            style="background-image: radial-gradient(#ff4655 1px, transparent 1px); background-size: 20px 20px;">
-          </div>
-          <img src="Imagenes/valocup.png"
-            class="absolute inset-0 h-full w-full object-cover opacity-50 group-hover:scale-110 transition-transform duration-700" />
-          <div class="relative z-20 h-full flex flex-col justify-end p-8 bg-gradient-to-t from-black via-transparent">
-            <span
-              class="inline-block w-fit px-3 py-1 rounded-full bg-red-600 text-[10px] font-bold text-white mb-3">PRÓXIMAMENTE</span>
-            <h3 class="text-3xl font-black text-white uppercase tracking-tighter">Champions Tour -
-              Shanghái
-            </h3>
-            <p class="text-gray-300 text-base">24 de septiembre al 18 de octubre de 2026.</p>
-          </div>
-          <a href="https://valorantesports.com/es-MX/news/first-look-at-valorant-champions-tour-2026-"
-            class="absolute inset-0 z-20"></a>
-        </div>
-
-        <div
-          class="group relative overflow-hidden rounded-xl bg-black h-96 border border-white/10 cursor-pointer transition-all duration-300 hover:-translate-y-3 hover:shadow-[0_20px_50px_rgba(0,207,239,0.3)]">
-          <div
-            class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none"
-            style="background-image: radial-gradient(#00cfef 1px, transparent 1px); background-size: 15px 15px;">
-          </div>
-          <img src="Imagenes/lolworldcup.png"
-            class="absolute inset-0 h-full w-full object-cover opacity-50 group-hover:scale-110 transition-transform duration-700" />
-          <div class="relative z-20 h-full flex flex-col justify-end p-8 bg-gradient-to-t from-black via-transparent">
-            <span
-              class="inline-block w-fit px-3 py-1 rounded-full bg-blue-600 text-[10px] font-bold text-white mb-3">PRÓXIMAMENTE</span>
-            <h3 class="text-3xl font-black text-white uppercase tracking-tighter">lol Worlds 2026 -
-              Estados
-              Unidos</h3>
-            <p class="text-gray-300 text-base">Octubre - Noviembre 2026.</p>
-          </div>
-          <a href="https://lolesports.com/es-MX/" class="absolute inset-0 z-20"></a>
-        </div>
-
-        <div
-          class="group relative overflow-hidden rounded-xl bg-black h-96 border border-white/10 cursor-pointer transition-all duration-300 hover:-translate-y-3 hover:shadow-[0_20px_50px_rgba(252,163,17,0.3)]">
-          <div
-            class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none"
-            style="background-image: radial-gradient(#fca311 1px, transparent 1px); background-size: 25px 25px;">
-          </div>
-          <img src="Imagenes/cs2cup.png"
-            class="absolute inset-0 h-full w-full object-cover opacity-50 group-hover:scale-110 transition-transform duration-700" />
-          <div class="relative z-20 h-full flex flex-col justify-end p-8 bg-gradient-to-t from-black via-transparent">
-            <span
-              class="inline-block w-fit px-3 py-1 rounded-full bg-orange-500 text-[10px] font-bold text-white mb-3">PRÓXIMAMENTE</span>
-            <h3 class="text-3xl font-black text-white uppercase tracking-tighter">CS2 IEM Cologne -
-              Alemania
-            </h3>
-            <p class="text-gray-300 text-base">2 al 21 de junio de 2026.</p>
-          </div>
-          <a href="https://esportsworldcup.com/en/competitions/2026/cs2" class="absolute inset-0 z-20"></a>
-        </div>
-
-        <div
-          class="group relative overflow-hidden rounded-xl bg-black h-96 border border-white/10 cursor-pointer transition-all duration-300 hover:-translate-y-3 hover:shadow-[0_20px_50px_rgba(239,0,219,0.3)]">
-          <div
-            class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none"
-            style="background-image: radial-gradient(#ef00db 1px, transparent 1px); background-size: 15px 15px;">
-          </div>
-          <img src="Imagenes/dota2cup.png"
-            class="absolute inset-0 h-full w-full object-cover opacity-50 group-hover:scale-110 transition-transform duration-700" />
-          <div class="relative z-20 h-full flex flex-col justify-end p-8 bg-gradient-to-t from-black via-transparent">
-            <span
-              class="inline-block w-fit px-3 py-1 rounded-full bg-fuchsia-600 text-[10px] font-bold text-white mb-3">PRÓXIMAMENTE</span>
-            <h3 class="text-3xl font-black text-white uppercase tracking-tighter">dota 2 World Cup -
-              Riyadh
-            </h3>
-            <p class="text-gray-300 text-base">7 al 18 de julio de 2026.</p>
-          </div>
-          <a href="https://esportsworldcup.com/en/competitions/2026/dota2" class="absolute inset-0 z-20"></a>
-        </div>
-
-      </div>
+            } @empty {
+              <p class="mt-2 text-sm text-monitor-2">Nadie ha preguntado todavía. Sé el primero.</p>
+            }
+          }
+        </a>
+      </article>
     </div>
   </section>
 
-  <!-- Las credenciales del equipo estan divididas entre el css de home y una carpeta js en public para la funcionalidad con algunas cosas en el home.ts -->
-  <!-- Esta section es para que se vea osea carguen las credenciales y el diseño de lo demas -->
-  <section class="nexos-lanyards-section" aria-label="Equipo Nexos">
-    <div class="nexos-bg-glow"></div>
-
-    <div class="nexos-lanyards-header">
-      <span class="eyebrow">Conoce al equipo detras de nexos</span>
-      <h2>Los creadores de <span>Nexos</span></h2>
+  <!-- ============ RECIÉN LLEGADOS ============ -->
+  <section class="local pt-28">
+    <div class="titulo-seccion max-w-2xl">
+      <h2 class="letrero text-[clamp(2.25rem,4.5vw,3.5rem)] text-monitor">Recién llegados al local</h2>
+      <p class="mt-3 text-lg text-monitor-2">Los juegos que la comunidad descubrió esta temporada.</p>
     </div>
 
-    <div
-      class="flex items-center gap-4 p-2 border border-white/5 rounded-xl bg-[#06060e]/50 max-w-sm mx-auto mt-2 mb-5">
-      <svg class="h-10 w-8 shrink-0 mt-1" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <filter id="handGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-
-        <path d="M16 40V12C16 10.8954 16.8954 10 18 10C19.1046 10 20 10.8954 20 12V24" stroke="#475569" stroke-width="2"
-          stroke-linecap="round" />
-        <path d="M20 24V14C20 12.8954 20.8954 12 22 12C23.1046 12 24 12.8954 24 14V24" stroke="#475569" stroke-width="2"
-          stroke-linecap="round" />
-        <path d="M24 24V16C24 14.8954 24.8954 14 26 14C27.1046 14 28 14.8954 28 16V28" stroke="#475569" stroke-width="2"
-          stroke-linecap="round" />
-        <path d="M28 28V20C28 18.8954 28.8954 18 30 18C31.1046 18 32 18.8954 32 20V32" stroke="#475569" stroke-width="2"
-          stroke-linecap="round" />
-
-        <path d="M16 32V42H36V28C36 26.3431 34.6569 25 33 25" stroke="#475569" stroke-width="2"
-          stroke-linecap="round" />
-
-        <path d="M16 28L8 22C6.5 21 6.5 19 8 18" stroke="#7C3AED" stroke-width="2.5" stroke-linecap="round" />
-
-        <g filter="url(#handGlow)">
-          <path d="M16 12V32" stroke="#0EA5E9" stroke-width="3" stroke-linecap="round" />
-        </g>
-      </svg>
-
-      <div class="flex flex-col">
-        <p class="text-gray-300 font-semibold tracking-tight text-x">
-          <span class="text-purple-400 font-bold uppercase tracking-wider text-xl block mb-1">Interacción:</span>
-          Arrastra para interactuar con las credenciales del equipo.
-        </p>
-      </div>
+    <div class="mt-12 grid grid-cols-1 gap-6 lg:grid-cols-[1.35fr_1fr]">
+      @for (r of recienLlegados; track r.titulo; let i = $index) {
+        <article class="llegado cubiculo overflow-hidden" [class.lg:row-span-2]="i === 0">
+          <div class="relative" [class]="i === 0 ? 'aspect-[4/3] lg:aspect-auto lg:h-full' : 'aspect-[16/8]'">
+            <img [src]="r.imagen" [alt]="'Arte de ' + r.titulo" class="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+            <div class="absolute inset-x-0 bottom-0 p-6 llegado-texto">
+              <h3 class="letrero text-monitor" [class]="i === 0 ? 'text-4xl' : 'text-2xl'">{{ r.titulo }}</h3>
+              <p class="text-xs text-monitor-2 mt-1">Salió el {{ r.fecha }}</p>
+              <p class="mt-2 text-sm text-monitor/85 max-w-prose" [class.line-clamp-2]="i !== 0">{{ r.texto }}</p>
+            </div>
+          </div>
+        </article>
+      }
     </div>
-
-    <!-- Aqui se llama el canvas de las credenciales del equipo con la funcionalidad de arrastrar y rotar con el mouse esta en el js de public y el diseño con tailwind -->
-    <canvas id="nexos-lanyard-canvas"></canvas>
-
   </section>
 
+  <!-- ============ AQUÍ SE JUEGA DE TODO ============ -->
+  <section aria-label="Juegos que se juegan en Nexos" class="cinta mt-28">
+    <div class="cinta-pista">
+      <!-- 4 copias: cada mitad de la pista mide más que la pantalla, así el ciclo nunca deja hueco -->
+      @for (vuelta of [0, 1, 2, 3]; track vuelta) {
+        <div class="cinta-grupo" [attr.aria-hidden]="vuelta > 0 ? 'true' : null">
+          @for (l of logos; track l[1]) {
+            <img [src]="'Logos-Juegos/' + l[1]" [alt]="vuelta === 0 ? l[0] : ''" width="56" height="56" loading="lazy" class="h-14 w-auto" />
+          }
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- ============ CARTELERA DE TORNEOS ============ -->
+  <section class="local pt-28">
+    <div class="titulo-seccion flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <h2 class="letrero text-[clamp(2.25rem,4.5vw,3.5rem)] text-monitor">Cartelera de torneos</h2>
+        <p class="mt-3 text-lg text-monitor-2">Los afiches que este año pegamos en la pared.</p>
+      </div>
+      <a routerLink="/esports" class="boton boton-linea">Todos los partidos <app-icono nombre="arrow-right" [tam]="18" /></a>
+    </div>
+
+    <div class="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+      @for (t of torneos; track t.titulo; let i = $index) {
+        <a appAfiche [href]="t.url" target="_blank" rel="noopener" class="torneo afiche block overflow-hidden"
+           [class.afiche-der]="i % 2 === 1">
+          <div class="relative aspect-[3/4]">
+            <img [src]="t.imagen" alt="" class="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+            <div class="absolute inset-0 torneo-velo"></div>
+            <div class="absolute inset-x-0 bottom-0 p-5">
+              <span class="ficha" [class]="t.estado === 'En curso' ? 'ficha-vivo' : t.estado === 'Próximo' ? 'ficha-ambar' : 'ficha-tenue'">
+                @if (t.estado === 'En curso') { <span class="punto-vivo"></span> }
+                {{ t.estado }}
+              </span>
+              <h3 class="letrero text-2xl text-monitor mt-3">{{ t.titulo }}</h3>
+              <p class="text-sm text-monitor-2">{{ t.lugar }} · {{ t.fechas }}</p>
+            </div>
+          </div>
+          <span class="sr-only">(se abre en otra pestaña)</span>
+        </a>
+      }
+    </div>
+  </section>
+
+  <!-- ============ QUIENES ATIENDEN ============ -->
+  <section class="local pt-28" aria-labelledby="titulo-equipo">
+    <div class="titulo-seccion max-w-2xl">
+      <h2 id="titulo-equipo" class="letrero text-[clamp(2.25rem,4.5vw,3.5rem)] text-monitor">Quiénes atienden el local</h2>
+      <p class="mt-3 text-lg text-monitor-2">Arrastra las credenciales del equipo que creó Nexos.</p>
+    </div>
+    <!-- En pantallas angostas las credenciales mantienen su tamaño y se recorren deslizando -->
+    <div class="mt-8 cubiculo overflow-x-auto credenciales">
+      <div class="min-w-[960px]">
+        <canvas id="nexos-lanyard-canvas" class="block w-full" aria-label="Credenciales de Andres Parra, Mateo Leal y Nicolas Foglea"></canvas>
+      </div>
+    </div>
+    <p class="mt-2 text-sm text-monitor-2 sm:hidden">Desliza para ver a todo el equipo.</p>
+  </section>
 </div>
