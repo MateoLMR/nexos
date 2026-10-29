@@ -1,9 +1,10 @@
 import { AfterViewInit, ChangeDetectorRef, Component, computed, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { NgTemplateOutlet } from '@angular/common';
 import { forkJoin, of, catchError, map } from 'rxjs';
 import { gsap } from 'gsap';
 import { TextPlugin } from 'gsap/TextPlugin';
-import { JuegosService, Juego } from '../../core/services/juegos';
+import { JuegosService, Juego, RecienLlegado } from '../../core/services/juegos';
 import { DetalleJuegosService } from '../../core/services/detalle-juegos';
 import { ForumService, Post } from '../../core/services/forum';
 import { PandaScoreService } from '../../core/services/pandascore';
@@ -21,10 +22,10 @@ const CREATORS = [
   { name: 'Nicolas Foglea', role: 'Bases de datos', avatar: 'Avatars/Paloma.jpeg', color: '#3DDC84', accent: '#3DDC84', badge: 'Backend' },
 ];
 
-// Juegos cuyo mejor precio se muestra en el tablero de la pared
-const JUEGOS_TABLERO = ['xc2', 'mnl', 'ck3', 'ag4'];
+// Cuántos juegos muestra el tablero "Precios de hoy" (los de mayor descuento)
+const FILAS_TABLERO = 4;
 
-interface FilaPrecio { id: string; titulo: string; tienda: string; precio: string; }
+interface FilaPrecio { id: string; titulo: string; tienda: string; precio: string; descuento: number; }
 interface Partido { liga: string; a: string; b: string; enVivo: boolean; hora: string; juego: string; }
 
 // Torneos grandes del año (contenido existente); el estado se calcula con la fecha de hoy
@@ -35,13 +36,6 @@ const TORNEOS = [
   { titulo: 'Dota 2 · World Cup', lugar: 'Riad', fechas: '7 – 18 jul 2026', desde: '2026-07-07', hasta: '2026-07-18', imagen: 'Imagenes/dota2cup.png', url: 'https://esportsworldcup.com/en/competitions/2026/dota2' },
 ];
 
-// Juegos recién llegados (contenido existente de "recomendados de la semana")
-const RECIEN_LLEGADOS = [
-  { titulo: 'Grime II', fecha: '31 mar 2026', imagen: 'Imagenes/grime2.png', texto: 'Acción y aventura metroidvania con una atmósfera surrealista: explora un mundo alienígena oscuro, enfréntate a criaturas grotescas y descubre sus secretos.' },
-  { titulo: 'Hozy', fecha: '30 mar 2026', imagen: 'Imagenes/hozy.png', texto: 'Simulador "cozy" para restaurar un vecindario olvidado habitación por habitación: limpiar, pintar y amueblar, sin temporizadores ni presiones.' },
-  { titulo: 'Monster Hunter Stories 3: Twisted Reflection', fecha: '12 mar 2026', imagen: 'Imagenes/monsterhunter.png', texto: 'La tercera entrega del RPG spin-off: eres un "Monster Rider" que forma vínculos con los monstruos en lugar de cazarlos.' },
-];
-
 const LOGOS = [
   ['Overwatch', 'Overwatch.png'], ['Warcraft', 'Warcraft.png'], ["Assassin's Creed", 'Assasin.png'],
   ['League of Legends', 'lol.png'], ['GTA', 'Gta.png'], ['Rainbow Six', 'Rainbow.png'],
@@ -50,7 +44,7 @@ const LOGOS = [
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, Icono, AficheDirective, ContadorDirective],
+  imports: [RouterLink, NgTemplateOutlet, Icono, AficheDirective, ContadorDirective],
   templateUrl: './home.html',
   styleUrl: './home.css',
 })
@@ -67,8 +61,10 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
   private cdr = inject(ChangeDetectorRef);
 
   readonly torneos = TORNEOS.map((t) => ({ ...t, estado: this.estadoTorneo(t.desde, t.hasta) }));
-  readonly recienLlegados = RECIEN_LLEGADOS;
   readonly logos = LOGOS;
+
+  // Lanzamientos populares del último mes (RAWG, se renuevan cada día); null = cargando
+  recienLlegados = signal<RecienLlegado[] | null>(null);
 
   // Buscador del mostrador
   juegos = signal<Juego[]>([]);
@@ -94,6 +90,27 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
     this.cargarPrecios();
     this.cargarPartido();
     this.cargarDudas();
+    this.cargarRecienLlegados();
+  }
+
+  private async cargarRecienLlegados() {
+    try {
+      this.recienLlegados.set((await this.juegosSvc.getRecienLlegados()).slice(0, 3));
+    } catch {
+      this.recienLlegados.set([]);
+    }
+    this.cdr.markForCheck();
+    // Las tarjetas llegan después del primer pintado: se animan cuando ya están en el DOM
+    requestAnimationFrame(() => {
+      this.raiz?.nativeElement.querySelectorAll('.llegado').forEach((el, i) =>
+        this.motion.alScroll(el, { x: i % 2 ? 60 : -60, opacity: 0, duration: 1 }));
+      this.motion.refrescarScroll();
+    });
+  }
+
+  fechaCorta(fecha: string | null): string {
+    // La API manda "2026-10-15" o "2026-10-15T00:00:00.000Z": se toma solo el día, a mediodía, para no correrlo por la zona horaria
+    return fecha ? new Date(`${fecha.slice(0, 10)}T12:00:00`).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
   }
 
   ngAfterViewInit() {
@@ -155,18 +172,17 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
   // ---------- datos de la pared ----------
   private async cargarPrecios() {
     try {
-      const [detalles, hoy] = await Promise.all([
-        Promise.all(JUEGOS_TABLERO.map((id) => this.detalleSvc.getPorId(id))),
-        this.detalleSvc.getPreciosDeHoy().catch(() => []),
-      ]);
-      const filas: FilaPrecio[] = [];
-      detalles.forEach((d, i) => {
-        if (!d) return;
-        // precio de hoy (CheapShark): la tienda popular más barata; sin precio, el juego no sale en el afiche
-        const t = DetalleJuegosService.tiendaDeHoy(hoy, JUEGOS_TABLERO[i]);
-        if (!t) return;
-        filas.push({ id: JUEGOS_TABLERO[i], titulo: d.titulo, tienda: t.nombre, precio: t.precio });
-      });
+      const [juegos, hoy] = await Promise.all([this.juegosSvc.getJuegos(), this.detalleSvc.getPreciosDeHoy()]);
+      // Los juegos con mayor descuento hoy (tienda popular más barata de cada uno)
+      const filas = hoy
+        .filter((p) => p.masBarato?.precioCop != null)
+        .sort((a, b) => (b.masBarato!.descuento - a.masBarato!.descuento) || (a.masBarato!.precioCop! - b.masBarato!.precioCop!))
+        .slice(0, FILAS_TABLERO)
+        .map((p) => {
+          const t = DetalleJuegosService.tiendaDeHoy(hoy, p.juego)!;
+          const titulo = juegos.find((j) => j.id === p.juego)?.titulo ?? p.juego;
+          return { id: p.juego, titulo, tienda: t.nombre, precio: t.precio, descuento: p.masBarato!.descuento };
+        });
       this.precios.set(filas);
     } catch {
       this.precios.set([]);
@@ -244,10 +260,8 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
 
   private iniciarScroll() {
     const r = this.raiz.nativeElement;
-    // Cada sección entra distinto: los recién llegados se deslizan, los torneos caen como afiches, los creadores aparecen
-    r.querySelectorAll('.llegado').forEach((el, i) =>
-      this.motion.alScroll(el, { x: i % 2 ? 60 : -60, opacity: 0, duration: 1 })
-    );
+    // Cada sección entra distinto: los torneos caen como afiches y los títulos se destapan.
+    // (Los recién llegados se animan en cargarRecienLlegados, cuando llegan sus datos)
     r.querySelectorAll('.torneo').forEach((el, i) =>
       this.motion.alScroll(el, { y: -50, rotate: i % 2 ? 6 : -6, opacity: 0, ease: 'back.out(1.4)', duration: 0.9 })
     );

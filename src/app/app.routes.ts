@@ -10,6 +10,7 @@ import { Esports } from './pages/esports/esports';
 import { Counter } from './pages/esports/counter/counter';
 import { ForoHomeComponent } from './pages/foro/foro-home';
 import { Perfil } from './pages/perfil/perfil';
+import { adminGuard } from './core/guards/admin.guard';
 
 
 export const routes: Routes = [
@@ -34,6 +35,9 @@ export const routes: Routes = [
   // Foro page
   { path: 'foro',    component: ForoHomeComponent },
   // Perfil page
-  { path: 'perfil',  component: Perfil}
+  { path: 'perfil',  component: Perfil},
+  // Panel de administración (solo administradores; se carga aparte para no pesar en el resto del sitio)
+  { path: 'admin', canActivate: [adminGuard], loadComponent: () => import('./pages/admin/admin').then((m) => m.Admin) },
+  { path: 'admin/juego/:id', canActivate: [adminGuard], loadComponent: () => import('./pages/admin/editar-juego').then((m) => m.EditarJuego) },
 
 ];

@@ -11,10 +11,11 @@ import { MotionService } from '../../shared/utils/motion';
 import { Icono } from '../../shared/ui/icono';
 import { ContadorDirective } from '../../shared/directives/contador.directive';
 import { AficheDirective } from '../../shared/directives/afiche.directive';
+import { VideoDirective } from '../../shared/directives/video.directive';
 
 @Component({
   selector: 'app-juego',
-  imports: [RouterLink, Icono, ContadorDirective, AficheDirective],
+  imports: [RouterLink, Icono, ContadorDirective, AficheDirective, VideoDirective],
   templateUrl: './juego.html',
   styleUrl: './juego.css',
 })

@@ -56,6 +56,9 @@
         <div class="mt-6 flex flex-wrap gap-3">
           <a routerLink="/foro" class="boton boton-principal"><app-icono nombre="message" [tam]="18" /> Ir al tablero</a>
           <a routerLink="/juegos" class="boton boton-linea"><app-icono nombre="gamepad" [tam]="18" /> Ver juegos</a>
+          @if (esAdmin()) {
+            <a routerLink="/admin" class="boton boton-linea"><app-icono nombre="settings" [tam]="18" /> Trastienda</a>
+          }
           <button type="button" class="boton boton-linea ml-auto" (click)="levantarse()"><app-icono nombre="log-out" [tam]="18" /> Cerrar sesión</button>
         </div>
       }

@@ -26,7 +26,21 @@ export interface DetalleJuego {
 }
 
 // Precios de PC en vivo (CheapShark vía /api/precios)
-export interface OfertaPc { tienda: string; popular: boolean; masBarata: boolean; precioUsd: number; retailUsd: number | null; precioCop: number | null; descuento: number; url: string; }
+export interface OfertaPc {
+  tienda: string;
+  popular: boolean;
+  masBarata: boolean;
+  /** 'CO': lo que cobra la tienda en Colombia (Steam, GOG) · 'US': precio de EE. UU. (CheapShark) */
+  region: 'CO' | 'US';
+  /** El precio en pesos sale de la tienda (Steam); si no, se convirtió con la tasa del día */
+  exacto: boolean;
+  precioCop: number | null;
+  retailCop: number | null;
+  precioUsd: number | null;
+  retailUsd: number | null;
+  descuento: number;
+  url: string;
+}
 export interface PreciosJuego {
   juego: string;
   enVivo: boolean;

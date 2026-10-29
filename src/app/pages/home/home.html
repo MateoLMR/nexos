@@ -142,23 +142,52 @@
   <section class="local pt-28">
     <div class="titulo-seccion max-w-2xl">
       <h2 class="letrero text-[clamp(2.25rem,4.5vw,3.5rem)] text-monitor">Recién llegados al local</h2>
-      <p class="mt-3 text-lg text-monitor-2">Los juegos que la comunidad descubrió esta temporada.</p>
+      <p class="mt-3 text-lg text-monitor-2">Los lanzamientos del último mes que más jugadores están probando. Se renueva cada día.</p>
     </div>
 
     <div class="mt-12 grid grid-cols-1 gap-6 lg:grid-cols-[1.35fr_1fr]">
-      @for (r of recienLlegados; track r.titulo; let i = $index) {
-        <article class="llegado cubiculo overflow-hidden" [class.lg:row-span-2]="i === 0">
-          <div class="relative" [class]="i === 0 ? 'aspect-[4/3] lg:aspect-auto lg:h-full' : 'aspect-[16/8]'">
-            <img [src]="r.imagen" [alt]="'Arte de ' + r.titulo" class="absolute inset-0 h-full w-full object-cover" loading="lazy" />
-            <div class="absolute inset-x-0 bottom-0 p-6 llegado-texto">
-              <h3 class="letrero text-monitor" [class]="i === 0 ? 'text-4xl' : 'text-2xl'">{{ r.titulo }}</h3>
-              <p class="text-xs text-monitor-2 mt-1">Salió el {{ r.fecha }}</p>
-              <p class="mt-2 text-sm text-monitor/85 max-w-prose" [class.line-clamp-2]="i !== 0">{{ r.texto }}</p>
-            </div>
-          </div>
-        </article>
+      @if (recienLlegados(); as lista) {
+        @for (r of lista; track r.slug; let i = $index) {
+          <!-- Si el juego ya está en Nexos abre su ficha; si no, su página en RAWG -->
+          @if (r.juego_id) {
+            <a class="llegado cubiculo overflow-hidden block" [class.lg:row-span-2]="i === 0" [routerLink]="['/juego', r.juego_id]">
+              <ng-container *ngTemplateOutlet="tarjetaLlegado; context: { $implicit: r, i: i }" />
+            </a>
+          } @else {
+            <a class="llegado cubiculo overflow-hidden block" [class.lg:row-span-2]="i === 0"
+               [href]="'https://rawg.io/games/' + r.slug" target="_blank" rel="noopener">
+              <ng-container *ngTemplateOutlet="tarjetaLlegado; context: { $implicit: r, i: i }" />
+            </a>
+          }
+        } @empty {
+          <p class="text-monitor-2">Hoy no pudimos traer los lanzamientos. Vuelve más tarde.</p>
+        }
+      } @else {
+        <div class="cargando-bloque aspect-[4/3] lg:row-span-2"></div>
+        <div class="cargando-bloque aspect-[16/8]"></div>
+        <div class="cargando-bloque aspect-[16/8]"></div>
       }
     </div>
+
+    <ng-template #tarjetaLlegado let-r let-i="i">
+            <div class="relative" [class]="i === 0 ? 'aspect-[4/3] lg:aspect-auto lg:h-full' : 'aspect-[16/8]'">
+              @if (r.imagen) {
+                <img [src]="r.imagen" [alt]="'Arte de ' + r.titulo" class="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+              }
+              <div class="absolute inset-x-0 bottom-0 p-6 llegado-texto">
+                <h3 class="letrero text-monitor" [class]="i === 0 ? 'text-4xl' : 'text-2xl'">{{ r.titulo }}</h3>
+                <p class="text-xs text-monitor-2 mt-1">
+                  @if (r.lanzamiento) { Salió el {{ fechaCorta(r.lanzamiento) }} }
+                  @if (r.generos) { · {{ r.generos }} }
+                </p>
+                @if (r.plataformas) { <p class="mt-2 text-sm text-monitor/85 max-w-prose line-clamp-2">{{ r.plataformas }}</p> }
+                <p class="mt-3 inline-flex items-center gap-1.5 text-sm font-medium" [class.text-ambar]="r.juego_id" [class.text-monitor-2]="!r.juego_id">
+                  @if (r.juego_id) { Ver precios y ficha <app-icono nombre="arrow-right" [tam]="16" /> }
+                  @else { Ver en RAWG <app-icono nombre="external-link" [tam]="14" /><span class="sr-only">(se abre en otra pestaña)</span> }
+                </p>
+              </div>
+            </div>
+    </ng-template>
   </section>
 
   <!-- ============ AQUÍ SE JUEGA DE TODO ============ -->

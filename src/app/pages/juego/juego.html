@@ -34,7 +34,7 @@
           <div class="media-principal cubiculo">
             @if (mediaActual(); as m) {
               @if (m.tipo === 'video') {
-                <video controls class="h-full w-full object-cover" [src]="m.src"></video>
+                <video controls playsinline class="h-full w-full object-cover" [appVideo]="m.src" [poster]="m.thumb || ''"></video>
               } @else {
                 <img [src]="m.src" [alt]="'Captura ' + (indexActual() + 1) + ' de ' + j.titulo" class="h-full w-full object-cover cursor-zoom-in"
                      (click)="abrirModal(m.src)" />
@@ -67,10 +67,11 @@
       <!-- Sobre el juego -->
       <section class="bloque mt-14">
         <h2 class="letrero text-3xl text-monitor">Sobre el juego</h2>
-        <p class="mt-4 text-lg leading-relaxed text-monitor/90 max-w-[68ch]">{{ j.descripcionLarga }}</p>
+        <p class="mt-4 text-lg leading-relaxed text-monitor/90 max-w-[68ch] whitespace-pre-line">{{ j.descripcionLarga }}</p>
       </section>
 
-      <!-- Valoración -->
+      <!-- Valoración (los juegos recién importados aún no la tienen) -->
+      @if (j.ratings.length) {
       <section class="bloque mt-14" aria-labelledby="titulo-valoracion">
         <h2 id="titulo-valoracion" class="letrero text-3xl text-monitor">Valoración Nexos</h2>
         <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -87,8 +88,10 @@
           }
         </div>
       </section>
+      }
 
       <!-- Pros y contras -->
+      @if (j.pros.length || j.contras.length) {
       <section class="bloque mt-14" aria-labelledby="titulo-puntos">
         <h2 id="titulo-puntos" class="letrero text-3xl text-monitor">Lo bueno y lo que debes saber</h2>
         <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -110,6 +113,7 @@
           </div>
         </div>
       </section>
+      }
     </div>
 
     <!-- ============ COLUMNA DE PRECIOS (fija) ============ -->
@@ -126,9 +130,9 @@
                 @for (n of [1, 2, 3]; track n) { <div class="cargando-bloque h-12"></div> }
               </div>
             } @else if (hayPreciosEnVivo) {
-              <!-- PC: precios de hoy (CheapShark), convertidos a pesos -->
+              <!-- PC: Steam y GOG con su precio para Colombia; las demás tiendas con su precio de EE. UU. -->
               <p class="px-5 pt-1 text-xs text-monitor-2 flex items-center gap-1.5">
-                <span class="punto-vivo"></span> PC · precios de hoy en pesos
+                <span class="punto-vivo"></span> PC · precios de hoy
               </p>
               <ul class="px-5 pb-2 pt-1" role="list">
                 @for (o of ofertasVisibles; track o.url; let i = $index) {
@@ -147,11 +151,19 @@
                         </span>
                       </span>
                       <span class="text-right whitespace-nowrap">
-                        <span class="block font-mono text-lg tabular" [class.text-ambar]="o.masBarata" [class.text-monitor]="!o.masBarata"
-                              [appContador]="pesos(o.precioCop)" [contadorRetraso]="0.35 + i * 0.08">{{ pesos(o.precioCop) }}</span>
+                        <span class="block font-mono text-lg tabular" [class.text-ambar]="o.masBarata" [class.text-monitor]="!o.masBarata">
+                          @if (!o.exacto) { <span class="text-monitor-2" title="Convertido con la tasa del día">≈ </span> }
+                          <span [appContador]="pesos(o.precioCop)" [contadorRetraso]="0.35 + i * 0.08">{{ pesos(o.precioCop) }}</span>
+                        </span>
                         <span class="block text-xs text-monitor-2 tabular">
-                          {{ dolares(o.precioUsd) }}
-                          @if (o.descuento > 0 && o.retailUsd) { <s class="ml-1 opacity-70">{{ dolares(o.retailUsd) }}</s> }
+                          @if (o.exacto) {
+                            @if (o.descuento > 0 && o.retailCop) { <s class="mr-1 opacity-70">{{ pesos(o.retailCop) }}</s> }
+                            precio en Colombia
+                          } @else {
+                            {{ dolares(o.precioUsd) }}
+                            @if (o.descuento > 0 && o.retailUsd) { <s class="ml-1 opacity-70">{{ dolares(o.retailUsd) }}</s> }
+                            · {{ o.region === 'CO' ? 'en Colombia' : 'en EE. UU.' }}
+                          }
                         </span>
                       </span>
                       <span class="sr-only">(se abre en otra pestaña)</span>
@@ -189,6 +201,10 @@
                   <p class="text-alerta">No pudimos actualizar ahora; estos son los últimos precios guardados.</p>
                 }
               </dl>
+              <p class="mx-5 mb-3 text-xs text-monitor-2 leading-relaxed">
+                Steam y GOG muestran lo que cobran en Colombia. Las demás tiendas dan su precio de EE. UU.:
+                al pagar desde Colombia puede cambiar. <span class="text-monitor">≈</span> = convertido con la tasa del día.
+              </p>
             } @else if (preciosEstado() === 'error') {
               <p class="px-5 py-4 text-sm text-monitor-2">No pudimos traer los precios de hoy. Vuelve a intentarlo en un momento.</p>
             } @else {

@@ -1,0 +1,177 @@
+<div class="local pt-10 pb-16">
+  <a routerLink="/admin" class="inline-flex items-center gap-1.5 text-sm text-monitor-2 hover:text-monitor no-underline">
+    <app-icono nombre="arrow-left" [tam]="16" /> Trastienda
+  </a>
+
+  @if (error) {
+    <div class="aviso aviso-error mt-6" role="alert"><app-icono nombre="alert" [tam]="18" /> {{ error }}</div>
+  } @else if (!juego) {
+    <div class="mt-6 space-y-3">@for (n of [1, 2, 3]; track n) { <div class="cargando-bloque h-24"></div> }</div>
+  } @else {
+    <form (ngSubmit)="guardar()" class="mt-5">
+      <header class="flex flex-wrap items-end justify-between gap-4">
+        <div class="min-w-0">
+          <h1 class="letrero text-[clamp(2rem,4.5vw,3.25rem)] text-monitor">{{ juego.titulo || 'Sin título' }}</h1>
+          <p class="mt-1 text-sm text-monitor-2">/juego/{{ id }}</p>
+        </div>
+        <div class="flex gap-2">
+          <a [routerLink]="['/juego', id]" class="boton boton-linea"><app-icono nombre="eye" [tam]="18" /> Ver ficha</a>
+          <button type="submit" class="boton boton-principal" [disabled]="guardando()">
+            <app-icono nombre="check" [tam]="18" /> {{ guardando() ? 'Guardando…' : 'Guardar cambios' }}
+          </button>
+        </div>
+      </header>
+
+      @if (aviso(); as a) {
+        <div class="aviso mt-6" [class.aviso-error]="a.tipo === 'error'" role="status">
+          <app-icono [nombre]="a.tipo === 'error' ? 'alert' : 'check'" [tam]="18" />
+          <span class="flex-1">{{ a.texto }}</span>
+          <button type="button" class="text-monitor-2 hover:text-monitor" (click)="aviso.set(null)" aria-label="Cerrar aviso"><app-icono nombre="x" [tam]="16" /></button>
+        </div>
+      }
+
+      <div class="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-12">
+        <!-- ============ FICHA ============ -->
+        <section class="lg:col-span-7 cubiculo p-6 space-y-5" aria-labelledby="titulo-ficha">
+          <h2 id="titulo-ficha" class="letrero text-2xl text-monitor">Ficha</h2>
+          <label class="etiqueta">Título
+            <input class="campo" name="titulo" [(ngModel)]="juego.titulo" required maxlength="200" />
+          </label>
+          <label class="etiqueta">Descripción corta <span class="ayuda">Aparece en el catálogo (máx. 400 caracteres)</span>
+            <textarea class="campo" name="descripcion" rows="3" maxlength="400" [(ngModel)]="juego.descripcion"></textarea>
+          </label>
+          <label class="etiqueta">Sobre el juego <span class="ayuda">Texto largo de la ficha; deja una línea en blanco entre párrafos</span>
+            <textarea class="campo" name="descripcion_larga" rows="9" [(ngModel)]="juego.descripcion_larga"></textarea>
+          </label>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <label class="etiqueta">Tipo <span class="ayuda">Filtro del catálogo: Estrategia, RPG…</span>
+              <input class="campo" name="tipo" [(ngModel)]="juego.tipo" maxlength="40" />
+            </label>
+            <label class="etiqueta">Lanzamiento
+              <input class="campo" name="lanzamiento" type="number" min="1970" max="2100" [(ngModel)]="juego.lanzamiento" />
+            </label>
+            <label class="etiqueta">Género
+              <input class="campo" name="genero" [(ngModel)]="juego.genero" maxlength="200" />
+            </label>
+            <label class="etiqueta">Desarrollador
+              <input class="campo" name="creador" [(ngModel)]="juego.creador" maxlength="200" />
+            </label>
+          </div>
+          <label class="etiqueta">Plataformas
+            <input class="campo" name="plataformas" [(ngModel)]="juego.plataformas" maxlength="300" />
+          </label>
+        </section>
+
+        <!-- ============ PORTADA E IDS ============ -->
+        <div class="lg:col-span-5 space-y-8">
+          <section class="cubiculo p-6 space-y-4" aria-labelledby="titulo-portada">
+            <h2 id="titulo-portada" class="letrero text-2xl text-monitor">Portada</h2>
+            <div class="aspect-[16/10] overflow-hidden rounded-sm bg-pared-2">
+              @if (juego.imagen) { <img [src]="juego.imagen" alt="Portada actual" class="h-full w-full object-cover" /> }
+            </div>
+            <label class="etiqueta">Dirección de la imagen
+              <input class="campo" name="imagen" type="url" [(ngModel)]="juego.imagen" placeholder="https://…" />
+            </label>
+            <label class="boton boton-linea w-full cursor-pointer">
+              <app-icono nombre="upload" [tam]="18" /> {{ subiendo() === 'portada' ? 'Subiendo…' : 'Subir imagen propia' }}
+              <input type="file" class="sr-only" accept="image/png,image/jpeg,image/webp" (change)="subir($event, 'portada')" [disabled]="subiendo() !== null" />
+            </label>
+          </section>
+
+          <section class="cubiculo p-6 space-y-4" aria-labelledby="titulo-ids">
+            <h2 id="titulo-ids" class="letrero text-2xl text-monitor">Tiendas y fuentes</h2>
+            <p class="text-sm text-monitor-2">Con estos IDs se buscan los precios. Si cambias uno, los precios se recalculan.</p>
+            <label class="etiqueta">ID de Steam <span class="ayuda">El número en store.steampowered.com/app/<b>268500</b></span>
+              <input class="campo" name="steam_app_id" inputmode="numeric" [(ngModel)]="juego.steam_app_id" />
+            </label>
+            <label class="etiqueta">ID de CheapShark
+              <input class="campo" name="cheapshark_id" inputmode="numeric" [(ngModel)]="juego.cheapshark_id" />
+            </label>
+            <label class="etiqueta">Slug de GOG <span class="ayuda">gog.com/game/<b>xcom_2</b>; vacío = se busca solo</span>
+              <input class="campo" name="gog_slug" [(ngModel)]="juego.gog_slug" />
+            </label>
+            <label class="etiqueta">Slug de RAWG <span class="ayuda">Para las plataformas</span>
+              <input class="campo" name="rawg_slug" [(ngModel)]="juego.rawg_slug" />
+            </label>
+          </section>
+        </div>
+      </div>
+
+      <!-- ============ GALERÍA ============ -->
+      <section class="mt-8 cubiculo p-6" aria-labelledby="titulo-galeria">
+        <h2 id="titulo-galeria" class="letrero text-2xl text-monitor">Galería</h2>
+        <p class="mt-1 text-sm text-monitor-2">El orden de aquí es el de la ficha. Los videos pueden ser mp4, webm o tráileres de Steam (.m3u8).</p>
+        <ul class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" role="list">
+          @for (m of juego.galeria; track m.src; let i = $index; let ultimo = $last) {
+            <li class="rounded-sm border border-cubiculo-2 bg-pared-2 overflow-hidden">
+              <div class="relative aspect-[16/9]">
+                @if (m.tipo === 'image') { <img [src]="m.src" [alt]="'Imagen ' + (i + 1)" class="h-full w-full object-cover" loading="lazy" /> }
+                @else if (m.thumb) { <img [src]="m.thumb" [alt]="'Video ' + (i + 1)" class="h-full w-full object-cover" loading="lazy" /> }
+                @else { <video [appVideo]="m.src" class="h-full w-full object-cover" muted preload="metadata"></video> }
+                <span class="ficha ficha-sobre-foto absolute top-2 left-2 tabular">{{ i + 1 }} · {{ m.tipo === 'video' ? 'video' : 'imagen' }}</span>
+              </div>
+              <div class="flex items-center gap-1 p-2">
+                <button type="button" class="boton-icono" (click)="mover(i, -1)" [disabled]="i === 0" aria-label="Mover antes"><app-icono nombre="arrow-up" [tam]="16" /></button>
+                <button type="button" class="boton-icono" (click)="mover(i, 1)" [disabled]="ultimo" aria-label="Mover después"><app-icono nombre="arrow-down" [tam]="16" /></button>
+                @if (m.tipo === 'image') {
+                  <button type="button" class="boton-icono text-xs !w-auto !px-2" (click)="usarDePortada(m)">Usar de portada</button>
+                }
+                <button type="button" class="boton-icono ml-auto hover:!text-alerta" (click)="quitar(i)" aria-label="Quitar de la galería"><app-icono nombre="trash" [tam]="16" /></button>
+              </div>
+            </li>
+          } @empty {
+            <li class="text-monitor-2">Sin imágenes todavía.</li>
+          }
+        </ul>
+        <div class="mt-5 flex flex-col gap-3 sm:flex-row">
+          <label class="flex-1"><span class="sr-only">Dirección de una imagen o video</span>
+            <input class="campo w-full" name="nuevaUrl" type="url" placeholder="Pega la dirección de una imagen o video (https://…)" [(ngModel)]="nuevaUrl" />
+          </label>
+          <button type="button" class="boton boton-linea" (click)="agregarUrl()"><app-icono nombre="plus" [tam]="18" /> Agregar</button>
+          <label class="boton boton-linea cursor-pointer">
+            <app-icono nombre="upload" [tam]="18" /> {{ subiendo() === 'galeria' ? 'Subiendo…' : 'Subir archivo' }}
+            <input type="file" class="sr-only" accept="image/png,image/jpeg,image/webp,video/mp4,video/webm" (change)="subir($event, 'galeria')" [disabled]="subiendo() !== null" />
+          </label>
+        </div>
+      </section>
+
+      <!-- ============ VALORACIÓN Y PUNTOS ============ -->
+      <div class="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <section class="cubiculo p-6" aria-labelledby="titulo-valoracion">
+          <h2 id="titulo-valoracion" class="letrero text-2xl text-monitor">Valoración Nexos</h2>
+          <p class="mt-1 text-sm text-monitor-2">De 0 a 100. Sin valoraciones, la sección no aparece en la ficha.</p>
+          <ul class="mt-4 space-y-3" role="list">
+            @for (r of juego.ratings; track $index; let i = $index) {
+              <li class="flex items-center gap-3">
+                <label class="flex-1"><span class="sr-only">Aspecto</span>
+                  <input class="campo w-full" [name]="'label' + i" [(ngModel)]="r.label" maxlength="40" />
+                </label>
+                <label class="w-24"><span class="sr-only">Puntaje de {{ r.label }}</span>
+                  <input class="campo w-full tabular" [name]="'valor' + i" type="number" min="0" max="100" [(ngModel)]="r.valor" />
+                </label>
+                <button type="button" class="boton-icono hover:!text-alerta" (click)="quitarValoracion(i)" [attr.aria-label]="'Quitar ' + r.label"><app-icono nombre="trash" [tam]="16" /></button>
+              </li>
+            }
+          </ul>
+          <button type="button" class="boton boton-linea mt-4" (click)="agregarValoracion()"><app-icono nombre="plus" [tam]="18" /> Agregar aspecto</button>
+        </section>
+
+        <section class="cubiculo p-6 space-y-4" aria-labelledby="titulo-puntos">
+          <h2 id="titulo-puntos" class="letrero text-2xl text-monitor">Lo bueno y lo que debes saber</h2>
+          <label class="etiqueta">Lo mejor <span class="ayuda">Un punto por línea</span>
+            <textarea class="campo" name="pros" rows="5" [(ngModel)]="prosTexto"></textarea>
+          </label>
+          <label class="etiqueta">A tener en cuenta <span class="ayuda">Un punto por línea</span>
+            <textarea class="campo" name="contras" rows="5" [(ngModel)]="contrasTexto"></textarea>
+          </label>
+        </section>
+      </div>
+
+      <div class="mt-8 flex justify-end">
+        <button type="submit" class="boton boton-principal" [disabled]="guardando()">
+          <app-icono nombre="check" [tam]="18" /> {{ guardando() ? 'Guardando…' : 'Guardar cambios' }}
+        </button>
+      </div>
+    </form>
+  }
+</div>

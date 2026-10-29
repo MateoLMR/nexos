@@ -1,0 +1,136 @@
+<div class="local pt-12 pb-16">
+  <header class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="letrero text-[clamp(2.5rem,5vw,4rem)] text-monitor">Trastienda</h1>
+      <p class="mt-2 text-lg text-monitor-2">Agrega, edita y quita juegos del local.</p>
+    </div>
+    <button type="button" class="boton boton-linea" (click)="actualizarRecientes()" [disabled]="actualizandoRecientes()">
+      <app-icono nombre="refresh" [tam]="18" /> {{ actualizandoRecientes() ? 'Actualizando…' : 'Actualizar "Recién llegados"' }}
+    </button>
+  </header>
+
+  @if (aviso(); as a) {
+    <div class="aviso mt-6" [class.aviso-error]="a.tipo === 'error'" role="status">
+      <app-icono [nombre]="a.tipo === 'error' ? 'alert' : 'check'" [tam]="18" />
+      <span class="flex-1">{{ a.texto }}</span>
+      <button type="button" class="text-monitor-2 hover:text-monitor" (click)="aviso.set(null)" aria-label="Cerrar aviso"><app-icono nombre="x" [tam]="16" /></button>
+    </div>
+  }
+
+  <!-- ============ ESPACIO ============ -->
+  <section class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3" aria-label="Uso de almacenamiento">
+    <div class="cubiculo p-5">
+      <p class="text-sm text-monitor-2">Juegos en el catálogo</p>
+      <p class="mt-1 font-mono text-3xl text-monitor tabular">{{ uso()?.juegos ?? juegos()?.length ?? '…' }}</p>
+    </div>
+    <div class="cubiculo p-5">
+      <p class="text-sm text-monitor-2">Base de datos (Neon)</p>
+      @if (uso(); as u) {
+        <p class="mt-1 text-monitor"><span class="font-mono text-2xl tabular">{{ tamano(u.neon.bytes) }}</span> <span class="text-monitor-2 text-sm">de {{ tamano(u.neon.limite) }}</span></p>
+        <div class="barra mt-3"><div class="barra-relleno" [style.width.%]="porcentaje(u.neon.bytes, u.neon.limite)"></div></div>
+      } @else { <div class="cargando-bloque h-8 mt-2"></div> }
+    </div>
+    <div class="cubiculo p-5">
+      <p class="text-sm text-monitor-2">Archivos (Cloudflare R2)</p>
+      @if (uso(); as u) {
+        @if (u.r2; as r) {
+          <p class="mt-1 text-monitor"><span class="font-mono text-2xl tabular">{{ tamano(r.bytes) }}</span> <span class="text-monitor-2 text-sm">de {{ tamano(r.limite) }} · {{ r.archivos }} archivos</span></p>
+          <div class="barra mt-3"><div class="barra-relleno" [style.width.%]="porcentaje(r.bytes, r.limite)"></div></div>
+        } @else {
+          <p class="mt-2 text-sm text-monitor-2">Falta conectar R2 en Vercel para medirlo y subir archivos.</p>
+        }
+      } @else { <div class="cargando-bloque h-8 mt-2"></div> }
+    </div>
+  </section>
+
+  <!-- ============ AGREGAR DESDE RAWG ============ -->
+  <section class="mt-12" aria-labelledby="titulo-agregar">
+    <h2 id="titulo-agregar" class="letrero text-3xl text-monitor">Agregar un juego</h2>
+    <p class="mt-2 text-monitor-2 max-w-2xl">Búscalo en RAWG: la ficha, la portada, las capturas y los precios se llenan solos. Después revisas el texto y agregas la valoración.</p>
+    <form class="mt-5 flex flex-col gap-3 sm:flex-row" (submit)="buscar($event)" role="search">
+      <label for="buscar-rawg" class="sr-only">Nombre del juego</label>
+      <input id="buscar-rawg" class="campo flex-1" type="search" placeholder="Hades II, Baldur's Gate 3, Balatro…" autocomplete="off"
+             [value]="busqueda()" (input)="busqueda.set($any($event.target).value)" />
+      <button type="submit" class="boton boton-principal" [disabled]="buscando() || busqueda().trim().length < 2">
+        <app-icono nombre="search" [tam]="18" /> {{ buscando() ? 'Buscando…' : 'Buscar en RAWG' }}
+      </button>
+    </form>
+
+    @if (resultados(); as lista) {
+      <ul class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">
+        @for (r of lista; track r.slug) {
+          <li class="cubiculo overflow-hidden flex flex-col">
+            <div class="aspect-[16/9] bg-pared-2">
+              @if (r.imagen) { <img [src]="r.imagen" [alt]="'Arte de ' + r.titulo" class="h-full w-full object-cover" loading="lazy" /> }
+            </div>
+            <div class="p-4 flex flex-col flex-1">
+              <p class="text-monitor font-medium">{{ r.titulo }}</p>
+              <p class="text-xs text-monitor-2 mt-1">{{ r.lanzamiento?.slice(0, 4) || 'Sin fecha' }} · {{ r.plataformas.join(' · ') || '—' }}</p>
+              <button type="button" class="boton mt-4 w-full" [class.boton-principal]="!r.juegoId" [class.boton-linea]="r.juegoId"
+                      (click)="importar(r)" [disabled]="importando() !== null">
+                @if (r.juegoId) { <app-icono nombre="pencil" [tam]="16" /> Ya está: editar }
+                @else if (importando() === r.slug) { Agregando… }
+                @else { <app-icono nombre="plus" [tam]="16" /> Agregar a Nexos }
+              </button>
+            </div>
+          </li>
+        } @empty {
+          <li class="text-monitor-2">No hay resultados. Prueba con el nombre en inglés.</li>
+        }
+      </ul>
+    }
+  </section>
+
+  <!-- ============ CATÁLOGO ============ -->
+  <section class="mt-14" aria-labelledby="titulo-catalogo">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+      <h2 id="titulo-catalogo" class="letrero text-3xl text-monitor">Juegos del local</h2>
+      <label class="w-full sm:w-72">
+        <span class="sr-only">Filtrar juegos</span>
+        <input class="campo w-full" type="search" placeholder="Filtrar por nombre" [value]="filtro()" (input)="filtro.set($any($event.target).value)" />
+      </label>
+    </div>
+
+    @if (juegos() === null) {
+      <div class="mt-6 space-y-2">@for (n of [1, 2, 3, 4]; track n) { <div class="cargando-bloque h-16"></div> }</div>
+    } @else {
+      <ul class="mt-6 cubiculo divide-y divide-cubiculo-2" role="list">
+        @for (j of visibles(); track j.id) {
+          <li class="fila-admin">
+            <div class="h-12 w-20 shrink-0 overflow-hidden rounded-sm bg-pared-2">
+              @if (j.imagen) { <img [src]="j.imagen" alt="" class="h-full w-full object-cover" loading="lazy" /> }
+            </div>
+            <div class="min-w-0 flex-1">
+              <a [routerLink]="['/juego', j.id]" class="text-monitor font-medium hover:underline">{{ j.titulo }}</a>
+              <p class="text-xs text-monitor-2">
+                {{ j.tipo || 'Sin tipo' }} · {{ j.lanzamiento || '—' }} · {{ j.medios }} imágenes
+                @if (!j.con_precio) { · <span class="text-ambar">sin tienda de PC</span> }
+              </p>
+            </div>
+            <a [routerLink]="['/admin/juego', j.id]" class="boton boton-linea !min-h-9 !px-3"><app-icono nombre="pencil" [tam]="16" /> <span class="hidden sm:inline">Editar</span></a>
+            <button type="button" class="boton boton-linea !min-h-9 !px-3 boton-peligro" (click)="confirmarBorrar.set(j)" [disabled]="borrando() === j.id"
+                    [attr.aria-label]="'Eliminar ' + j.titulo">
+              <app-icono nombre="trash" [tam]="16" />
+            </button>
+          </li>
+        } @empty {
+          <li class="p-5 text-monitor-2">No hay juegos que coincidan.</li>
+        }
+      </ul>
+    }
+  </section>
+</div>
+
+<!-- Confirmación antes de eliminar -->
+@if (confirmarBorrar(); as j) {
+  <div class="velo" (click)="confirmarBorrar.set(null)">
+    <div class="dialogo cubiculo" role="alertdialog" aria-modal="true" aria-labelledby="titulo-borrar" (click)="$event.stopPropagation()">
+      <h2 id="titulo-borrar" class="letrero text-2xl text-monitor">¿Eliminar "{{ j.titulo }}"?</h2>
+      <p class="mt-2 text-monitor-2">Se borran su ficha, galería, valoración y precios guardados. Esto no se puede deshacer.</p>
+      <div class="mt-6 flex justify-end gap-2">
+        <button type="button" class="boton boton-linea" (click)="confirmarBorrar.set(null)">Cancelar</button>
+        <button type="button" class="boton boton-peligro-lleno" (click)="borrar(j)"><app-icono nombre="trash" [tam]="16" /> Eliminar</button>
+      </div>
+    </div>
+  </div>
+}

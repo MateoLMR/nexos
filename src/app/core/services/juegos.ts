@@ -13,6 +13,17 @@ export interface Juego {
   tipo: string;
 }
 
+// Lanzamiento popular del último mes (RAWG, lo renueva el cron diario). juego_id: si ya está en Nexos.
+export interface RecienLlegado {
+  slug: string;
+  titulo: string;
+  imagen: string | null;
+  lanzamiento: string | null;
+  plataformas: string | null;
+  generos: string | null;
+  juego_id: string | null;
+}
+
 // Los juegos vienen de la base de datos (GET /api/games). Se piden una sola vez y se guardan en caché.
 @Injectable({ providedIn: 'root' })
 export class JuegosService {
@@ -32,6 +43,15 @@ export class JuegosService {
       });
     }
     return this.cache;
+  }
+
+  getRecienLlegados(): Promise<RecienLlegado[]> {
+    return firstValueFrom(this.http.get<RecienLlegado[]>(`${this.api}/games`, { params: { vista: 'recientes' } }));
+  }
+
+  /** Olvida la lista guardada (después de agregar, editar o borrar juegos desde el panel) */
+  limpiarCache() {
+    this.cache = null;
   }
 
   async getJuegoPorId(id: string): Promise<Juego | undefined> {

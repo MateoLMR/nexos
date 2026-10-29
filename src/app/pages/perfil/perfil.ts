@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { Auth } from '@angular/fire/auth';
 import { ProfileService, Profile } from '../../core/services/perfil';
 import { AuthService } from '../../core/services/auth';
+import { AdminService } from '../../core/services/admin';
 import { MotionService } from '../../shared/utils/motion';
 import { Icono } from '../../shared/ui/icono';
 
@@ -20,7 +21,9 @@ export class Perfil implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private motion = inject(MotionService);
   private cdr = inject(ChangeDetectorRef);
+  private adminSvc = inject(AdminService);
 
+  esAdmin = signal(false);
   profileData: Profile | null = null;
   estado: 'cargando' | 'listo' | 'sin-sesion' | 'error' = 'cargando';
   entrando = false;
@@ -47,6 +50,8 @@ export class Perfil implements OnInit, OnDestroy {
       // POST /users/me devuelve el perfil propio con email (y lo crea si aún no existe)
       this.profileData = await this.profileService.createProfile();
       this.estado = 'listo';
+      // El acceso a la trastienda solo se muestra a los administradores
+      this.adminSvc.esAdmin().then((si) => { this.esAdmin.set(si); this.cdr.markForCheck(); });
       this.iniciarReloj();
     } catch (error) {
       console.error(error);
