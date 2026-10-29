@@ -2,6 +2,7 @@ import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, inject, OnDest
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { Auth, onAuthStateChanged, User } from '@angular/fire/auth';
 import { filter } from 'rxjs';
+import type { gsap } from 'gsap';
 import { AuthService } from '../../services/auth/auth';
 import { MotionService } from '../../shared/motion';
 import { Icono } from '../../shared/icono';
@@ -53,6 +54,25 @@ export class Navbar implements AfterViewInit, OnDestroy {
     });
     // Cierra el menú del celular al cambiar de página
     this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => this.menuAbierto.set(false));
+  }
+
+  // El cartel se balancea como un péndulo que se va calmando; mientras se mueve no se reinicia
+  private balanceo?: gsap.core.Timeline;
+  balancearCartel() {
+    if (this.motion.reducido() || this.balanceo?.isActive()) return;
+    const g = this.motion.gsap;
+    const cartel = this.cartel.nativeElement;
+    const bandas = cartel.querySelectorAll('.cartel-bandas i');
+    this.balanceo = g.timeline()
+      .to(cartel, { rotation: 10, duration: 0.22, ease: 'sine.out' })
+      .to(cartel, { rotation: -8, duration: 0.24, ease: 'sine.inOut' })
+      .to(cartel, { rotation: 4, duration: 0.2, ease: 'sine.inOut' })
+      .to(cartel, { rotation: -2, duration: 0.18, ease: 'sine.inOut' })
+      .to(cartel, { rotation: -4, duration: 0.16, ease: 'sine.out' })
+      .fromTo(bandas, { skewX: 0 }, {
+        keyframes: [{ skewX: -18, duration: 0.25 }, { skewX: 10, duration: 0.3 }, { skewX: 0, duration: 0.3 }],
+        ease: 'sine.inOut', stagger: 0.08,
+      }, 0);
   }
 
   // routerLinkActive avisa cuando cambia el enlace activo; se mide en el siguiente cuadro, ya con la clase puesta

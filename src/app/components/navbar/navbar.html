@@ -11,7 +11,7 @@
         <span #letrero class="letrero text-[1.4rem] sm:text-[1.65rem] text-monitor">Nexos</span>
       </a>
       <!-- Cartel de local pegado con cinta -->
-      <span #cartel class="cartel">
+      <span #cartel class="cartel" (mouseenter)="balancearCartel()" (click)="balancearCartel()">
         <span class="cartel-tabla">abierto</span>
         <span class="cartel-bandas" aria-hidden="true"><i></i><i></i></span>
       </span>

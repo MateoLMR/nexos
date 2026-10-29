@@ -4,7 +4,11 @@ import { ScrollTrigger, Flip } from 'gsap/all';
 
 // En entornos sin matchMedia (pruebas con jsdom) los plugins no se registran y todo queda estático
 const hayMatchMedia = typeof window !== 'undefined' && typeof window.matchMedia === 'function';
-if (hayMatchMedia) gsap.registerPlugin(ScrollTrigger, Flip);
+if (hayMatchMedia) {
+  gsap.registerPlugin(ScrollTrigger, Flip);
+  // El navegador no restaura el scroll por su cuenta; el router decide (siempre arriba al cambiar de página)
+  ScrollTrigger.clearScrollMemory('manual');
+}
 
 // Centraliza la animación del sitio y respeta "reducir movimiento" del sistema.
 @Injectable({ providedIn: 'root' })
@@ -93,7 +97,10 @@ export class MotionService {
   }
 
   refrescarScroll() {
-    if (hayMatchMedia) ScrollTrigger.refresh();
+    if (!hayMatchMedia) return;
+    // Sin esto, refresh() devuelve la página a la posición que tenía la vista anterior
+    ScrollTrigger.clearScrollMemory();
+    ScrollTrigger.refresh();
   }
 
   limpiarScroll() {

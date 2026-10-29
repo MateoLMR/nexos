@@ -4,6 +4,8 @@
 .mostrador {
   position: relative;
   background: var(--color-pared);
+  /* Capa propia en la transición entre páginas: el header no se funde y la lámpara no se ve duplicada */
+  view-transition-name: cabecera;
 }
 /* Al bajar, el contenido se desvanece bajo el header en vez de cortarse con una línea */
 .mostrador::after {
@@ -51,17 +53,6 @@
   padding: 0.6rem 0.9rem 0;
   border-radius: 0;
 }
-/* hilo corto que baja del cable */
-.riel .enlace::before {
-  content: "";
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  width: 1px;
-  height: 9px;
-  background: var(--color-cubiculo-2);
-}
-
 /* ---------- la lámpara ---------- */
 .lampara {
   position: absolute;
@@ -70,6 +61,8 @@
   width: 0;
   height: 11rem;
   pointer-events: none;
+  /* cordón que baja del cable hasta la pantalla y viaja con la lámpara */
+  background: linear-gradient(var(--color-cubiculo-2), var(--color-cubiculo-2)) center 10px / 1px 7px no-repeat;
   transition:
     transform 0.45s cubic-bezier(0.34, 1.3, 0.5, 1),
     width 0.45s cubic-bezier(0.34, 1.3, 0.5, 1),
@@ -115,9 +108,11 @@
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  rotate: -4deg;
+  /* transform (no "rotate") para que GSAP parta de esta inclinación al balancearlo */
+  transform: rotate(-4deg);
   transform-origin: 50% 0;
   margin-top: 4px;
+  cursor: default;
 }
 .cartel-tabla {
   display: block;
@@ -147,24 +142,7 @@
 .cartel-bandas i { display: block; width: 100%; height: 3px; background: var(--color-ambar); opacity: 0.7; transform-origin: top; }
 .cartel-bandas i:nth-child(2) { width: 78%; opacity: 0.45; }
 
-@media (hover: hover) and (pointer: fine) {
-  .cartel:hover { animation: balanceo 1s cubic-bezier(0.36, 0, 0.3, 1); }
-  .cartel:hover .cartel-bandas i { animation: banda 0.9s ease-in-out; }
-  .cartel:hover .cartel-bandas i:nth-child(2) { animation-delay: 0.08s; }
-}
-@keyframes balanceo {
-  0% { rotate: -4deg; }
-  20% { rotate: 10deg; }
-  40% { rotate: -8deg; }
-  60% { rotate: 4deg; }
-  80% { rotate: -2deg; }
-  100% { rotate: -4deg; }
-}
-@keyframes banda {
-  0%, 100% { transform: skewX(0); }
-  30% { transform: skewX(-18deg); }
-  60% { transform: skewX(10deg); }
-}
+/* El balanceo del cartel lo hace GSAP en navbar.ts (al pasar el mouse o tocarlo) */
 
 /* ---------- celular ---------- */
 .enlace-movil { padding: 0.75rem 0.25rem; font-size: 1.05rem; }

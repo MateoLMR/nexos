@@ -48,5 +48,9 @@ src/environments/environment.development.ts
 src/environments/environment.ts
 .vercel
 .env*
+
+
 database/schema.sql
 database/reparar_detalle.sql
+database/precios.sql
+database/r2_rutas.sql
