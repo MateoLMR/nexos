@@ -1,10 +1,10 @@
 import { AfterViewInit, ChangeDetectorRef, Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { forkJoin, of, catchError, map, Subscription, timer, switchMap } from 'rxjs';
-import { PandaScoreService } from '../../services/pandascore';
-import { MotionService } from '../../shared/motion';
-import { Icono } from '../../shared/icono';
-import { AficheDirective } from '../../shared/afiche.directive';
+import { PandaScoreService } from '../../core/services/pandascore';
+import { MotionService } from '../../shared/utils/motion';
+import { Icono } from '../../shared/ui/icono';
+import { AficheDirective } from '../../shared/directives/afiche.directive';
 
 interface EsportCard {
   id: string;

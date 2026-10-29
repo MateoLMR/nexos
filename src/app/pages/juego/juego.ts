@@ -5,12 +5,12 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { DetalleJuegosService, DetalleJuego, MediaItem, Tienda, PreciosJuego, PlataformasJuego } from '../../services/detalle-juegos';
-import { JuegosService } from '../../services/juegos';
-import { MotionService } from '../../shared/motion';
-import { Icono } from '../../shared/icono';
-import { ContadorDirective } from '../../shared/contador.directive';
-import { AficheDirective } from '../../shared/afiche.directive';
+import { DetalleJuegosService, DetalleJuego, MediaItem, PreciosJuego, PlataformasJuego } from '../../core/services/detalle-juegos';
+import { JuegosService } from '../../core/services/juegos';
+import { MotionService } from '../../shared/utils/motion';
+import { Icono } from '../../shared/ui/icono';
+import { ContadorDirective } from '../../shared/directives/contador.directive';
+import { AficheDirective } from '../../shared/directives/afiche.directive';
 
 @Component({
   selector: 'app-juego',
@@ -38,7 +38,6 @@ export class Juego implements OnInit, AfterViewInit, OnDestroy {
   modalAbierto = signal(false);
 
   relacionados: { id: string; titulo: string; imagen: string; tipo: string }[] = [];
-  tiendasOrdenadas: (Tienda & { masBarata: boolean })[] = [];
 
   // Precios en vivo (CheapShark) y plataformas (RAWG); llegan después del detalle
   precios = signal<PreciosJuego | null>(null);
@@ -77,7 +76,6 @@ export class Juego implements OnInit, AfterViewInit, OnDestroy {
       this.cargando = false;
       this.indexActual.set(0);
       this.mediaActual.set(this.juego?.galeria?.[0] ?? null);
-      this.tiendasOrdenadas = this.ordenarTiendas(this.juego?.tiendas ?? []);
       if (this.juego) {
         this.relacionados = todos.filter((j) => j.tipo === this.juego!.tipo && j.id !== this.juegoId).slice(0, 4);
       }
@@ -160,21 +158,10 @@ export class Juego implements OnInit, AfterViewInit, OnDestroy {
     return !!this.precios()?.pc.length;
   }
 
-  /** Tiendas manuales de Neon que no son de PC (consolas): se muestran como precio de referencia */
-  get tiendasConsola() {
-    return this.tiendasOrdenadas.filter((t) => this.esDeConsola(t.nombre));
-  }
-
-  /** Tiendas de consola de RAWG que no están ya entre las manuales */
-  get enlacesConsola() {
-    const manuales = this.tiendasConsola.map((t) => t.nombre.toLowerCase());
-    return (this.plataformas()?.tiendas ?? []).filter(
-      (t) => t.plataforma && t.plataforma !== 'PC' && !manuales.some((m) => m.includes(t.tienda.toLowerCase().split(' ')[0])),
-    );
-  }
-
-  private esDeConsola(nombre: string): boolean {
-    return /playstation|xbox|microsoft|nintendo|switch/i.test(nombre);
+  /** La más barata, si quedó entre las tiendas escondidas (las populares van primero) */
+  get masBarataOculta() {
+    if (this.verTodasLasTiendas()) return null;
+    return this.precios()?.pc.slice(this.TIENDAS_VISIBLES).find((o) => o.masBarata) ?? null;
   }
 
   pesos(valor: number | null | undefined): string {
@@ -199,23 +186,6 @@ export class Juego implements OnInit, AfterViewInit, OnDestroy {
 
   mesYAnio(fecha: string | null | undefined): string {
     return fecha ? new Date(fecha).toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }) : '';
-  }
-
-  // ---------- tiendas ----------
-  private ordenarTiendas(tiendas: Tienda[]) {
-    const num = (p: string) => {
-      const m = p.match(/[\d.,]+/)?.[0] ?? '';
-      return /^\d{1,3}(\.\d{3})+$/.test(m) ? Number(m.replace(/\./g, '')) : Number(m.replace(',', '.'));
-    };
-    const enPesos = tiendas.filter((t) => /COP/i.test(t.precio));
-    const minimo = enPesos.length ? Math.min(...enPesos.map((t) => num(t.precio))) : null;
-    return [...tiendas]
-      .sort((a, b) => {
-        const ap = /COP/i.test(a.precio), bp = /COP/i.test(b.precio);
-        if (ap !== bp) return ap ? -1 : 1; // primero los precios en pesos
-        return num(a.precio) - num(b.precio);
-      })
-      .map((t) => ({ ...t, masBarata: minimo !== null && /COP/i.test(t.precio) && num(t.precio) === minimo }));
   }
 
   claseTienda(nombre: string): string {

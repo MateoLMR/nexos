@@ -1,10 +1,10 @@
 import { Component, OnInit, ChangeDetectorRef, inject, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { DetalleJuegosService, DetalleJuego, Tienda } from '../../services/detalle-juegos';
-import { JuegosService, Juego } from '../../services/juegos';
-import { MotionService } from '../../shared/motion';
-import { Icono } from '../../shared/icono';
-import { ContadorDirective } from '../../shared/contador.directive';
+import { DetalleJuegosService, DetalleJuego, Tienda } from '../../core/services/detalle-juegos';
+import { JuegosService, Juego } from '../../core/services/juegos';
+import { MotionService } from '../../shared/utils/motion';
+import { Icono } from '../../shared/ui/icono';
+import { ContadorDirective } from '../../shared/directives/contador.directive';
 
 interface RatingComparado {
   label: string;
@@ -114,10 +114,10 @@ export class Comparar implements OnInit, OnDestroy {
     const prom = (j: DetalleJuego) => (j.ratings.length ? Math.round(j.ratings.reduce((s, r) => s + r.valor, 0) / j.ratings.length) : 0);
     this.promedioA = prom(this.juegoA);
     this.promedioB = prom(this.juegoB);
-    // Precio de hoy (CheapShark) si el juego lo tiene; si no, el más barato de referencia en pesos
+    // Precio de hoy (CheapShark): la tienda popular más barata; null si no se vende en PC
     const hoy = await this.svc.getPreciosDeHoy().catch(() => []);
-    this.precioA = DetalleJuegosService.tiendaDeHoy(hoy, this.juegoA.id) ?? this.masBarato(this.juegoA.tiendas);
-    this.precioB = DetalleJuegosService.tiendaDeHoy(hoy, this.juegoB.id) ?? this.masBarato(this.juegoB.tiendas);
+    this.precioA = DetalleJuegosService.tiendaDeHoy(hoy, this.juegoA.id);
+    this.precioB = DetalleJuegosService.tiendaDeHoy(hoy, this.juegoB.id);
 
     this.mostrandoComparacion = true;
     this.cdr.detectChanges();
@@ -134,11 +134,6 @@ export class Comparar implements OnInit, OnDestroy {
     if (!this.precioA || !this.precioB) return null;
     const a = this.aNumero(this.precioA.precio), b = this.aNumero(this.precioB.precio);
     return a < b ? 'a' : b < a ? 'b' : 'empate';
-  }
-
-  private masBarato(tiendas: Tienda[]): Tienda | null {
-    const enPesos = tiendas.filter((t) => /COP/i.test(t.precio)).sort((x, y) => this.aNumero(x.precio) - this.aNumero(y.precio));
-    return enPesos[0] ?? null;
   }
 
   private aNumero(precio: string) {

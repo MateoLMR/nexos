@@ -8,8 +8,8 @@ import { Dota } from './pages/esports/dota/dota';
 import { League } from './pages/esports/league/league';
 import { Esports } from './pages/esports/esports';
 import { Counter } from './pages/esports/counter/counter';
-import { ForoHomeComponent } from './pages/foro/foro-home/foro-home';
-import { Perfil } from './pages/perfil/perfil/perfil';
+import { ForoHomeComponent } from './pages/foro/foro-home';
+import { Perfil } from './pages/perfil/perfil';
 
 
 export const routes: Routes = [

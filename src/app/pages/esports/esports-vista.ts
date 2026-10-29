@@ -1,8 +1,8 @@
 import { AfterViewInit, Component, ElementRef, inject, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MotionService } from '../../shared/motion';
-import { Icono } from '../../shared/icono';
-import { AficheDirective } from '../../shared/afiche.directive';
+import { MotionService } from '../../shared/utils/motion';
+import { Icono } from '../../shared/ui/icono';
+import { AficheDirective } from '../../shared/directives/afiche.directive';
 
 export interface PartidoVista {
   id: number | string;

@@ -100,17 +100,17 @@
               }
             </p>
           } @else {
-            <p class="letrero text-2xl text-monitor">Sin precio en pesos para comparar</p>
+            <p class="letrero text-2xl text-monitor">Uno de los dos no se vende hoy en PC</p>
           }
           <p class="text-sm text-monitor-2 mt-1">Tiene el precio más bajo en pesos</p>
           <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
             <div>
               <p class="font-mono text-xl text-monitor tabular" [appContador]="precioA?.precio ?? '—'">{{ precioA?.precio ?? '—' }}</p>
-              <p class="text-monitor-2">{{ precioA?.nombre ?? 'Sin tienda en pesos' }}</p>
+              <p class="text-monitor-2">{{ precioA?.nombre ?? 'No se vende en PC' }}</p>
             </div>
             <div class="text-right">
               <p class="font-mono text-xl text-monitor tabular" [appContador]="precioB?.precio ?? '—'">{{ precioB?.precio ?? '—' }}</p>
-              <p class="text-monitor-2">{{ precioB?.nombre ?? 'Sin tienda en pesos' }}</p>
+              <p class="text-monitor-2">{{ precioB?.nombre ?? 'No se vende en PC' }}</p>
             </div>
           </div>
         </div>

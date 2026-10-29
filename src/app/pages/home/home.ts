@@ -3,14 +3,14 @@ import { Router, RouterLink } from '@angular/router';
 import { forkJoin, of, catchError, map } from 'rxjs';
 import { gsap } from 'gsap';
 import { TextPlugin } from 'gsap/TextPlugin';
-import { JuegosService, Juego } from '../../services/juegos';
-import { DetalleJuegosService } from '../../services/detalle-juegos';
-import { ForumService, Post } from '../../services/forum/forum';
-import { PandaScoreService } from '../../services/pandascore';
-import { MotionService } from '../../shared/motion';
-import { Icono } from '../../shared/icono';
-import { AficheDirective } from '../../shared/afiche.directive';
-import { ContadorDirective } from '../../shared/contador.directive';
+import { JuegosService, Juego } from '../../core/services/juegos';
+import { DetalleJuegosService } from '../../core/services/detalle-juegos';
+import { ForumService, Post } from '../../core/services/forum';
+import { PandaScoreService } from '../../core/services/pandascore';
+import { MotionService } from '../../shared/utils/motion';
+import { Icono } from '../../shared/ui/icono';
+import { AficheDirective } from '../../shared/directives/afiche.directive';
+import { ContadorDirective } from '../../shared/directives/contador.directive';
 
 gsap.registerPlugin(TextPlugin);
 
@@ -162,11 +162,8 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
       const filas: FilaPrecio[] = [];
       detalles.forEach((d, i) => {
         if (!d) return;
-        // precio de hoy (CheapShark); si no hay, el mejor de referencia en pesos o la primera tienda
-        const enPesos = (d.tiendas ?? [])
-          .filter((t) => /COP/i.test(t.precio))
-          .sort((a, b) => this.aNumero(a.precio) - this.aNumero(b.precio));
-        const t = DetalleJuegosService.tiendaDeHoy(hoy, JUEGOS_TABLERO[i]) ?? enPesos[0] ?? d.tiendas?.[0];
+        // precio de hoy (CheapShark): la tienda popular más barata; sin precio, el juego no sale en el afiche
+        const t = DetalleJuegosService.tiendaDeHoy(hoy, JUEGOS_TABLERO[i]);
         if (!t) return;
         filas.push({ id: JUEGOS_TABLERO[i], titulo: d.titulo, tienda: t.nombre, precio: t.precio });
       });
@@ -211,11 +208,6 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
     } catch {
       this.dudas.set([]);
     }
-  }
-
-  private aNumero(precio: string) {
-    const m = precio.match(/[\d.,]+/);
-    return m ? Number(m[0].replace(/\./g, '').replace(',', '.')) : Infinity;
   }
 
   private estadoTorneo(desde: string, hasta: string): 'En curso' | 'Próximo' | 'Terminado' {

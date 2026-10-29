@@ -10,7 +10,7 @@ import {
   inject
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { PandaScoreService } from './../../../services/pandascore';// Ajusta la ruta
+import { PandaScoreService } from '../../../core/services/pandascore';// Ajusta la ruta
 import { timer, Subscription } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 

@@ -7,7 +7,7 @@ import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
 import { provideAuth, getAuth } from '@angular/fire/auth';
 
 import { routes } from './app.routes';
-import { tokenInterceptor } from './services/auth/token.interceptor';
+import { tokenInterceptor } from './core/interceptors/token.interceptor';
 import { environment } from '../environments/environment';
 
 //config de nuestra firebase ¡¡NO TOCAR NADA!!

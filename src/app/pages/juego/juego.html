@@ -132,6 +132,9 @@
               </p>
               <ul class="px-5 pb-2 pt-1" role="list">
                 @for (o of ofertasVisibles; track o.url; let i = $index) {
+                  @if (!o.popular && (i === 0 || ofertasVisibles[i - 1].popular)) {
+                    <li class="pt-3 pb-1 text-xs text-monitor-2">Otras tiendas</li>
+                  }
                   <li class="fila-tienda">
                     <a [href]="o.url" target="_blank" rel="noopener" class="tienda" [class]="claseTienda(o.tienda)">
                       <span class="min-w-0">
@@ -139,12 +142,12 @@
                           {{ o.tienda }} <app-icono nombre="external-link" [tam]="14" class="text-monitor-2" />
                         </span>
                         <span class="flex flex-wrap items-center gap-x-2 text-xs">
-                          @if (i === 0) { <span class="text-ambar">El más barato</span> }
+                          @if (o.masBarata) { <span class="text-ambar">El más barato</span> }
                           @if (o.descuento > 0) { <span class="ficha ficha-ambar !text-[0.7rem] !py-0">−{{ o.descuento }} %</span> }
                         </span>
                       </span>
                       <span class="text-right whitespace-nowrap">
-                        <span class="block font-mono text-lg tabular" [class.text-ambar]="i === 0" [class.text-monitor]="i !== 0"
+                        <span class="block font-mono text-lg tabular" [class.text-ambar]="o.masBarata" [class.text-monitor]="!o.masBarata"
                               [appContador]="pesos(o.precioCop)" [contadorRetraso]="0.35 + i * 0.08">{{ pesos(o.precioCop) }}</span>
                         <span class="block text-xs text-monitor-2 tabular">
                           {{ dolares(o.precioUsd) }}
@@ -162,6 +165,11 @@
                   <app-icono [nombre]="verTodasLasTiendas() ? 'chevron-up' : 'chevron-down'" [tam]="16" />
                   {{ verTodasLasTiendas() ? 'Ver menos tiendas' : 'Ver las otras ' + ofertasOcultas + ' tiendas' }}
                 </button>
+                @if (masBarataOculta; as o) {
+                  <p class="mx-5 -mt-2 mb-3 text-xs text-monitor-2">
+                    La más barata está ahí: <span class="text-ambar">{{ o.tienda }}, {{ pesos(o.precioCop) }}</span>
+                  </p>
+                }
               }
               <dl class="mx-5 mb-3 grid gap-1 rounded-sm bg-pared px-3 py-2.5 text-xs">
                 @if (precios()!.minimoHistorico; as m) {
@@ -181,60 +189,16 @@
                   <p class="text-alerta">No pudimos actualizar ahora; estos son los últimos precios guardados.</p>
                 }
               </dl>
+            } @else if (preciosEstado() === 'error') {
+              <p class="px-5 py-4 text-sm text-monitor-2">No pudimos traer los precios de hoy. Vuelve a intentarlo en un momento.</p>
             } @else {
-              <!-- Sin precio en vivo: los precios de referencia guardados en Nexos -->
-              @if (preciosEstado() === 'error') {
-                <p class="px-5 pt-1 text-xs text-monitor-2">No pudimos traer los precios de hoy; te mostramos los de referencia.</p>
-              }
-              <ul class="px-5 pb-3 pt-2" role="list">
-                @for (t of tiendasOrdenadas; track t.nombre; let i = $index) {
-                  <li class="fila-tienda">
-                    <a [href]="t.url" target="_blank" rel="noopener" class="tienda" [class]="claseTienda(t.nombre)">
-                      <span class="min-w-0">
-                        <span class="flex items-center gap-1.5 text-monitor font-medium">
-                          {{ t.nombre }} <app-icono nombre="external-link" [tam]="14" class="text-monitor-2" />
-                        </span>
-                        @if (t.masBarata) { <span class="text-xs text-ambar">El más barato</span> }
-                      </span>
-                      <span class="font-mono text-lg tabular whitespace-nowrap" [class.text-ambar]="t.masBarata" [class.text-monitor]="!t.masBarata"
-                            [appContador]="t.precio" [contadorRetraso]="0.35 + i * 0.08">{{ t.precio }}</span>
-                      <span class="sr-only">(se abre en otra pestaña)</span>
-                    </a>
-                  </li>
-                } @empty {
-                  <li class="py-3 text-sm text-monitor-2">Aún no tenemos tiendas para este juego.</li>
-                }
-              </ul>
-              <p class="px-5 pb-3 text-xs text-monitor-2">Precios de referencia; pueden cambiar en cada tienda.</p>
+              <!-- Sin precio en vivo: el juego no está en las tiendas de PC que sigue CheapShark -->
+              <div class="px-5 py-4">
+                <p class="text-monitor font-medium">No está a la venta en tiendas de PC</p>
+                <p class="mt-1 text-sm text-monitor-2">No encontramos este juego en ninguna tienda de PC que sigamos. Si vuelve a venderse, aparecerá aquí con su precio del día.</p>
+              </div>
             }
           </div>
-
-          <!-- Consolas y otras plataformas: precio de referencia (Neon) o enlace a su tienda (RAWG) -->
-          @if (hayPreciosEnVivo && (tiendasConsola.length || enlacesConsola.length)) {
-            <div class="border-t border-dashed border-ambar/25 px-5 pt-3 pb-2">
-              <p class="text-xs text-monitor-2">Consolas · precio de referencia</p>
-              <ul class="pt-1" role="list">
-                @for (t of tiendasConsola; track t.nombre) {
-                  <li class="fila-tienda">
-                    <a [href]="t.url" target="_blank" rel="noopener" class="tienda" [class]="claseTienda(t.nombre)">
-                      <span class="flex items-center gap-1.5 text-monitor font-medium">{{ t.nombre }} <app-icono nombre="external-link" [tam]="14" class="text-monitor-2" /></span>
-                      <span class="font-mono tabular whitespace-nowrap text-monitor">{{ t.precio }}</span>
-                      <span class="sr-only">(se abre en otra pestaña)</span>
-                    </a>
-                  </li>
-                }
-                @for (t of enlacesConsola; track t.url) {
-                  <li class="fila-tienda">
-                    <a [href]="t.url" target="_blank" rel="noopener" class="tienda" [class]="claseTienda(t.tienda)">
-                      <span class="flex items-center gap-1.5 text-monitor font-medium">{{ t.tienda }} <app-icono nombre="external-link" [tam]="14" class="text-monitor-2" /></span>
-                      <span class="text-xs text-monitor-2 whitespace-nowrap">{{ t.plataforma }} · ver precio</span>
-                      <span class="sr-only">(se abre en otra pestaña)</span>
-                    </a>
-                  </li>
-                }
-              </ul>
-            </div>
-          }
 
           @if (plataformas()?.plataformas?.length) {
             <p class="px-5 pt-1 text-xs text-monitor-2">

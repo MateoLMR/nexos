@@ -3,7 +3,7 @@ import {
   ElementRef, ViewChild, signal, effect, inject
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { PandaScoreService } from '../../../services/pandascore';
+import { PandaScoreService } from '../../../core/services/pandascore';
 import { timer, Subscription } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 

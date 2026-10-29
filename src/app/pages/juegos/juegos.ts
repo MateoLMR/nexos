@@ -1,11 +1,11 @@
 import { AfterViewInit, ChangeDetectorRef, Component, computed, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { JuegosService, Juego } from '../../services/juegos';
-import { DetalleJuegosService, Tienda } from '../../services/detalle-juegos';
-import { MotionService } from '../../shared/motion';
-import { Icono } from '../../shared/icono';
-import { AficheDirective } from '../../shared/afiche.directive';
-import { ContadorDirective } from '../../shared/contador.directive';
+import { JuegosService, Juego } from '../../core/services/juegos';
+import { DetalleJuegosService, Tienda } from '../../core/services/detalle-juegos';
+import { MotionService } from '../../shared/utils/motion';
+import { Icono } from '../../shared/ui/icono';
+import { AficheDirective } from '../../shared/directives/afiche.directive';
+import { ContadorDirective } from '../../shared/directives/contador.directive';
 
 // Paginación y juego destacado
 const JUEGOS_POR_PAGINA = 6;
@@ -120,15 +120,12 @@ export class Juegos implements OnInit, AfterViewInit, OnDestroy {
     if (tarjetas) this.motion.entrar(tarjetas, { y: 28, stagger: 0.06 });
   }
 
-  // Mejor precio en pesos del destacado (de game_stores)
+  // Precio de hoy del destacado (CheapShark): la tienda popular más barata
   private async cargarMejorPrecio() {
     if (!this.juegoDestacado) return;
     try {
-      const d = await this.detalleSvc.getPorId(this.juegoDestacado.id);
-      const tiendas = d?.tiendas ?? [];
-      const num = (p: string) => Number((p.match(/[\d.]+/)?.[0] ?? '').replace(/\./g, '')) || Infinity;
-      const enPesos = tiendas.filter((t) => /COP/i.test(t.precio)).sort((a, b) => num(a.precio) - num(b.precio));
-      this.mejorPrecio.set(enPesos[0] ?? tiendas[0] ?? null);
+      const hoy = await this.detalleSvc.getPreciosDeHoy();
+      this.mejorPrecio.set(DetalleJuegosService.tiendaDeHoy(hoy, this.juegoDestacado.id));
     } catch {
       this.mejorPrecio.set(null);
     }

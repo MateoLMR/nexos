@@ -42,6 +42,7 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Archivos de entorno con credenciales sensibles
 src/environments/environment.development.ts
@@ -49,14 +50,13 @@ src/environments/environment.ts
 .vercel
 .env*
 
-# base de datos
-database/schema.sql
-database/reparar_detalle.sql
-database/precios.sql
-database/r2_rutas.sql
-database/reemparejar_rawg.sql
+# Scripts SQL de la base de datos (se corren a mano en Neon)
+database/
 
-# .md y impeccable
+# Documentos internos y herramientas de diseño: solo en el equipo local.
+# El README.md sí se publica: es la portada del repositorio.
+*.md
+!README.md
 .claude/
 .impeccable/
 

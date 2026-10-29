@@ -1,59 +1,84 @@
 # Nexos
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.7.
+El café internet de tu barrio, abierto toda la noche: un lugar para cualquier jugador que quiere resolver una duda, encontrar el precio más bajo de un juego, comparar dos juegos, seguir partidos de eSports en vivo o conversar en el foro.
 
-## Development server
+**Sitio:** https://mateolmr.github.io/nexos/
 
-To start a local development server, run:
+## Qué tiene
 
-```bash
-ng serve
+- **Catálogo y detalle de juegos:** galería, valoración, ficha y juegos relacionados.
+- **Precios del día:** ofertas de tiendas de PC (CheapShark) convertidas a pesos colombianos. Las tiendas populares van primero y se marca la más barata.
+- **Plataformas:** en qué sistemas está cada juego (RAWG).
+- **Comparar:** dos juegos frente a frente, con valoración y precio.
+- **eSports:** partidos en vivo y próximos de Valorant, CS2, League of Legends y Dota 2 (PandaScore).
+- **Foro:** publicaciones, likes y comentarios, con inicio de sesión de Google.
+- **Perfil:** tu "cubículo", con tu foto, tus datos y el tiempo de sesión.
+
+## Cómo está armado
+
+```
+Angular (GitHub Pages)  ──►  API en Vercel (nexos-proxy)  ──►  Neon Postgres
+        │                           ├─► CheapShark (precios)
+        │                           ├─► RAWG (plataformas)
+        │                           └─► PandaScore (eSports)
+        ├─► Firebase Auth (solo el login con Google)
+        └─► Cloudflare R2 (imágenes y videos del catálogo)
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+- **Frontend:** Angular 21 (componentes standalone, signals), Tailwind CSS v4, GSAP para las animaciones y rutas con `#` para funcionar en GitHub Pages.
+- **API:** funciones de Vercel que hablan con Neon y con las APIs externas. Las llaves y la cadena de conexión viven solo como variables de entorno en Vercel; el navegador nunca las ve.
 
-## Code scaffolding
+## Estructura
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
+```
+src/app/
+├─ core/          servicios (datos, auth, foro, perfil, eSports) e interceptor del token
+├─ layout/        navbar y footer
+├─ shared/        directivas (afiches, contadores), íconos y utilidades (animación, rutas)
+└─ pages/         home, juegos, juego, comparar, esports, foro, perfil
+public/           logo, avatares, imágenes de eSports y torneos, logos de la cinta
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Correrlo en local
+
+Requisitos: Node.js 20 o superior.
 
 ```bash
-ng generate --help
+npm install
 ```
 
-## Building
+Crea `src/environments/environment.ts` y `src/environments/environment.development.ts` (no se suben al repositorio) con la URL de la API y la configuración web de Firebase:
 
-To build the project run:
+```ts
+export const environment = {
+  production: false,
+  apiUrl: 'https://nexos-proxy.vercel.app/api',
+  firebase: { apiKey: '…', authDomain: '…', projectId: '…', storageBucket: '…', messagingSenderId: '…', appId: '…' },
+};
+```
 
 ```bash
-ng build
+npm start
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+Abre http://localhost:4200.
 
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## Publicar en GitHub Pages
 
 ```bash
-ng test
+npx ng build --base-href /nexos/
 ```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
 
 ```bash
-ng e2e
+npx angular-cli-ghpages --dir=dist/nexos/browser
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+## Pruebas
 
-## Additional Resources
+```bash
+npm test
+```
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## Créditos
+
+Precios por [CheapShark](https://www.cheapshark.com) · Datos de juegos por [RAWG](https://rawg.io) · Partidos por [PandaScore](https://pandascore.co).
