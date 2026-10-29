@@ -5,7 +5,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { DetalleJuegosService, DetalleJuego, MediaItem, Tienda } from '../../services/detalle-juegos';
+import { DetalleJuegosService, DetalleJuego, MediaItem, Tienda, PreciosJuego, PlataformasJuego } from '../../services/detalle-juegos';
 import { JuegosService } from '../../services/juegos';
 import { MotionService } from '../../shared/motion';
 import { Icono } from '../../shared/icono';
@@ -40,6 +40,13 @@ export class Juego implements OnInit, AfterViewInit, OnDestroy {
   relacionados: { id: string; titulo: string; imagen: string; tipo: string }[] = [];
   tiendasOrdenadas: (Tienda & { masBarata: boolean })[] = [];
 
+  // Precios en vivo (CheapShark) y plataformas (RAWG); llegan después del detalle
+  precios = signal<PreciosJuego | null>(null);
+  preciosEstado = signal<'cargando' | 'listo' | 'error'>('cargando');
+  plataformas = signal<PlataformasJuego | null>(null);
+  verTodasLasTiendas = signal(false);
+  readonly TIENDAS_VISIBLES = 4;
+
   private sub?: Subscription;
   private tweens: gsap.core.Tween[] = [];
 
@@ -50,7 +57,12 @@ export class Juego implements OnInit, AfterViewInit, OnDestroy {
       this.cargando = true;
       this.juego = undefined;
       this.relacionados = [];
+      this.precios.set(null);
+      this.preciosEstado.set('cargando');
+      this.plataformas.set(null);
+      this.verTodasLasTiendas.set(false);
       this.cdr.detectChanges();
+      this.cargarPreciosYPlataformas(id);
 
       let todos: { id: string; titulo: string; imagen: string; tipo: string }[] = [];
       try {
@@ -121,6 +133,72 @@ export class Juego implements OnInit, AfterViewInit, OnDestroy {
       document.querySelectorAll('.bloque').forEach((el) => this.motion.alScroll(el, { y: 40, opacity: 0 }));
     }
     requestAnimationFrame(() => this.motion.refrescarScroll());
+  }
+
+  // ---------- precios en vivo y plataformas ----------
+  private cargarPreciosYPlataformas(id: string) {
+    this.detalleSvc.getPrecios(id).then(
+      (p) => { if (id === this.juegoId) { this.precios.set(p); this.preciosEstado.set('listo'); } },
+      () => { if (id === this.juegoId) this.preciosEstado.set('error'); },
+    );
+    // Si RAWG falla, simplemente no se muestran las otras plataformas
+    this.detalleSvc.getPlataformas(id).then((p) => { if (id === this.juegoId) this.plataformas.set(p); }, () => {});
+  }
+
+  /** Ofertas de PC visibles: las más baratas, o todas si se pidió */
+  get ofertasVisibles() {
+    const pc = this.precios()?.pc ?? [];
+    return this.verTodasLasTiendas() ? pc : pc.slice(0, this.TIENDAS_VISIBLES);
+  }
+
+  get ofertasOcultas(): number {
+    return Math.max(0, (this.precios()?.pc.length ?? 0) - this.TIENDAS_VISIBLES);
+  }
+
+  /** Hay precios de PC actualizados para mostrar */
+  get hayPreciosEnVivo(): boolean {
+    return !!this.precios()?.pc.length;
+  }
+
+  /** Tiendas manuales de Neon que no son de PC (consolas): se muestran como precio de referencia */
+  get tiendasConsola() {
+    return this.tiendasOrdenadas.filter((t) => this.esDeConsola(t.nombre));
+  }
+
+  /** Tiendas de consola de RAWG que no están ya entre las manuales */
+  get enlacesConsola() {
+    const manuales = this.tiendasConsola.map((t) => t.nombre.toLowerCase());
+    return (this.plataformas()?.tiendas ?? []).filter(
+      (t) => t.plataforma && t.plataforma !== 'PC' && !manuales.some((m) => m.includes(t.tienda.toLowerCase().split(' ')[0])),
+    );
+  }
+
+  private esDeConsola(nombre: string): boolean {
+    return /playstation|xbox|microsoft|nintendo|switch/i.test(nombre);
+  }
+
+  pesos(valor: number | null | undefined): string {
+    return valor == null ? '—' : `${valor.toLocaleString('es-CO')} COP`;
+  }
+
+  dolares(valor: number | null | undefined): string {
+    return valor == null ? '' : `US$${valor.toFixed(2)}`;
+  }
+
+  /** "hace 2 h", "hace 5 min", "ayer"… */
+  haceCuanto(fecha: string | null | undefined): string {
+    if (!fecha) return '';
+    const min = Math.max(0, Math.round((Date.now() - new Date(fecha).getTime()) / 60000));
+    if (min < 1) return 'hace un momento';
+    if (min < 60) return `hace ${min} min`;
+    const h = Math.round(min / 60);
+    if (h < 24) return `hace ${h} h`;
+    const d = Math.round(h / 24);
+    return d === 1 ? 'ayer' : `hace ${d} días`;
+  }
+
+  mesYAnio(fecha: string | null | undefined): string {
+    return fecha ? new Date(fecha).toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }) : '';
   }
 
   // ---------- tiendas ----------

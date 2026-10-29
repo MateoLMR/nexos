@@ -49,8 +49,14 @@ src/environments/environment.ts
 .vercel
 .env*
 
-
+# base de datos
 database/schema.sql
 database/reparar_detalle.sql
 database/precios.sql
 database/r2_rutas.sql
+database/reemparejar_rawg.sql
+
+# .md y impeccable
+.claude/
+.impeccable/
+

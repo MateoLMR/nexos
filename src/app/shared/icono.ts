@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { inject } from '@angular/core';
 import {
-  ArrowLeft, ArrowRight, Calendar, Check, ChevronDown, Clock, ExternalLink, Gamepad2, Heart,
+  ArrowLeft, ArrowRight, Calendar, Check, ChevronDown, ChevronUp, Clock, ExternalLink, Gamepad2, Heart,
   Image, LayoutGrid, List, LogIn, LogOut, MessageCircle, Minus, Monitor, Play, Plus, Radio,
   Scale, Search, Send, Store, Tag, Trophy, TriangleAlert, User, X, Swords, Tv, Eye, ArrowLeftRight,
   type IconNode,
@@ -11,7 +11,7 @@ import {
 // Íconos disponibles (Lucide, trazo de 24px). Se agregan aquí para mantener el bundle pequeño.
 const ICONOS: Record<string, IconNode> = {
   'arrow-left': ArrowLeft, 'arrow-right': ArrowRight, calendar: Calendar, check: Check,
-  'chevron-down': ChevronDown, clock: Clock, 'external-link': ExternalLink, gamepad: Gamepad2,
+  'chevron-down': ChevronDown, 'chevron-up': ChevronUp, clock: Clock, 'external-link': ExternalLink, gamepad: Gamepad2,
   heart: Heart, image: Image, grid: LayoutGrid, list: List, 'log-in': LogIn, 'log-out': LogOut,
   message: MessageCircle, minus: Minus, monitor: Monitor, play: Play, plus: Plus, radio: Radio,
   scale: Scale, search: Search, send: Send, store: Store, tag: Tag, trophy: Trophy,

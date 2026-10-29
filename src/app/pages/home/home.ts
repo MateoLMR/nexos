@@ -155,15 +155,19 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
   // ---------- datos de la pared ----------
   private async cargarPrecios() {
     try {
-      const detalles = await Promise.all(JUEGOS_TABLERO.map((id) => this.detalleSvc.getPorId(id)));
+      const [detalles, hoy] = await Promise.all([
+        Promise.all(JUEGOS_TABLERO.map((id) => this.detalleSvc.getPorId(id))),
+        this.detalleSvc.getPreciosDeHoy().catch(() => []),
+      ]);
       const filas: FilaPrecio[] = [];
       detalles.forEach((d, i) => {
-        if (!d?.tiendas?.length) return;
-        // mejor precio en pesos; si no hay, la primera tienda
-        const enPesos = d.tiendas
+        if (!d) return;
+        // precio de hoy (CheapShark); si no hay, el mejor de referencia en pesos o la primera tienda
+        const enPesos = (d.tiendas ?? [])
           .filter((t) => /COP/i.test(t.precio))
           .sort((a, b) => this.aNumero(a.precio) - this.aNumero(b.precio));
-        const t = enPesos[0] ?? d.tiendas[0];
+        const t = DetalleJuegosService.tiendaDeHoy(hoy, JUEGOS_TABLERO[i]) ?? enPesos[0] ?? d.tiendas?.[0];
+        if (!t) return;
         filas.push({ id: JUEGOS_TABLERO[i], titulo: d.titulo, tienda: t.nombre, precio: t.precio });
       });
       this.precios.set(filas);

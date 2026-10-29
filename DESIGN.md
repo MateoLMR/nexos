@@ -249,6 +249,11 @@ A featured item taped to the wall: rotated, shadowed, with tape on top. On mouse
 
 ### Tablero de precios (signature)
 Price board on pared-2 with a 45% amber border: rows of game/store on the left and an amber mono price on the right that rolls up from zero on entry; dashed amber row dividers; hover turns the title amber.
+- **Game detail ("Dónde comprarlo"):** when CheapShark has the game, the board opens with a green live dot and "PC · precios de hoy en pesos". Each row shows the COP price (mono, amber for the cheapest) with the USD price below in monitor-2, the retail USD struck through, and an amber "−N %" chip when discounted. Only the 4 cheapest rows show; a quiet "Ver las otras N tiendas" toggle reveals the rest. A pared inset follows with "Mínimo histórico" and "Actualizado hace X · 1 USD = N COP"; if the source failed it adds an alerta line saying the prices are the last saved.
+- Without a live price, the board falls back to the manual reference prices from Neon with "Precios de referencia" copy.
+- Below a dashed amber divider, "Consolas · precio de referencia" lists the manual console prices, plus RAWG store links (platform · "ver precio") for platforms not covered.
+- It closes with "Disponible en:" (RAWG platforms) and the required credits: "Precios: CheapShark · Plataformas: RAWG".
+- The home poster "Precios de hoy" and Comparar use the same live cheapest price, falling back to the manual one.
 
 ### Motion
 One easing (ease-salida, cubic-bezier(0.16, 1, 0.3, 1)). Page changes cross-fade 0.35s with a short rise; the catalogue cover morphs into the detail hero (view-transition "portada-juego", 0.5s). Lists enter staggered (0.6s, 18px rise, 0.06s step); sections reveal on scroll once with varied movement; filtered grids reorder with Flip. Skeletons shimmer in cubicle tones. With reduced motion: no tilt, no flicker, no marquee, entrances become 0.2s fades.

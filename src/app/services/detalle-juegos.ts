@@ -25,6 +25,27 @@ export interface DetalleJuego {
   contras: string[];
 }
 
+// Precios de PC en vivo (CheapShark vía /api/precios)
+export interface OfertaPc { tienda: string; precioUsd: number; retailUsd: number | null; precioCop: number | null; descuento: number; url: string; }
+export interface PreciosJuego {
+  juego: string;
+  enVivo: boolean;
+  pc: OfertaPc[];
+  minimoHistorico: { usd: number; cop: number | null; fecha: string } | null;
+  actualizado: string | null;
+  desactualizado: boolean;
+  tasa: { cop: number; actualizado: string } | null;
+}
+export interface PrecioDeHoy { juego: string; masBarato: OfertaPc | null; actualizado: string | null; }
+
+// Plataformas y tiendas (RAWG vía /api/plataformas, sin precios)
+export interface PlataformasJuego {
+  juego: string;
+  rawg: string | null;
+  plataformas: string[];
+  tiendas: { tienda: string; plataforma: string | null; url: string }[];
+}
+
 // El detalle de cada juego viene de la base de datos (GET /api/games/:id), con caché por id.
 @Injectable({ providedIn: 'root' })
 export class DetalleJuegosService {
@@ -52,6 +73,47 @@ export class DetalleJuegosService {
       this.cache.set(id, req);
     }
     return this.cache.get(id)!;
+  }
+
+  // Precios y plataformas se piden aparte del detalle para que la página no espere a CheapShark o RAWG
+  private cachePrecios = new Map<string, Promise<PreciosJuego>>();
+  private cachePlataformas = new Map<string, Promise<PlataformasJuego>>();
+  private cacheHoy: Promise<PrecioDeHoy[]> | null = null;
+
+  getPrecios(id: string): Promise<PreciosJuego> {
+    return this.pedirConCache(this.cachePrecios, id, `${this.api}/precios?juego=${encodeURIComponent(id)}`);
+  }
+
+  getPlataformas(id: string): Promise<PlataformasJuego> {
+    return this.pedirConCache(this.cachePlataformas, id, `${this.api}/plataformas?juego=${encodeURIComponent(id)}`);
+  }
+
+  // El más barato de hoy de cada juego con precio en vivo
+  getPreciosDeHoy(): Promise<PrecioDeHoy[]> {
+    if (!this.cacheHoy) {
+      this.cacheHoy = firstValueFrom(this.http.get<PrecioDeHoy[]>(`${this.api}/precios`)).catch((e) => {
+        this.cacheHoy = null;
+        throw e;
+      });
+    }
+    return this.cacheHoy;
+  }
+
+  /** El más barato de hoy de un juego, con la misma forma que una tienda manual ("125.800 COP"); null si no tiene precio en vivo */
+  static tiendaDeHoy(hoy: PrecioDeHoy[], id: string): Tienda | null {
+    const o = hoy.find((p) => p.juego === id)?.masBarato;
+    if (!o || o.precioCop == null) return null;
+    return { nombre: o.tienda, precio: `${o.precioCop.toLocaleString('es-CO')} COP`, url: o.url };
+  }
+
+  private pedirConCache<T>(cache: Map<string, Promise<T>>, id: string, url: string): Promise<T> {
+    if (!cache.has(id)) {
+      cache.set(id, firstValueFrom(this.http.get<T>(url)).catch((e) => {
+        cache.delete(id); // si falla, se reintenta la próxima vez
+        throw e;
+      }));
+    }
+    return cache.get(id)!;
   }
 
   getClaseTienda(nombre: string): string {

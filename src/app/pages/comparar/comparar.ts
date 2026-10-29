@@ -114,8 +114,10 @@ export class Comparar implements OnInit, OnDestroy {
     const prom = (j: DetalleJuego) => (j.ratings.length ? Math.round(j.ratings.reduce((s, r) => s + r.valor, 0) / j.ratings.length) : 0);
     this.promedioA = prom(this.juegoA);
     this.promedioB = prom(this.juegoB);
-    this.precioA = this.masBarato(this.juegoA.tiendas);
-    this.precioB = this.masBarato(this.juegoB.tiendas);
+    // Precio de hoy (CheapShark) si el juego lo tiene; si no, el más barato de referencia en pesos
+    const hoy = await this.svc.getPreciosDeHoy().catch(() => []);
+    this.precioA = DetalleJuegosService.tiendaDeHoy(hoy, this.juegoA.id) ?? this.masBarato(this.juegoA.tiendas);
+    this.precioB = DetalleJuegosService.tiendaDeHoy(hoy, this.juegoB.id) ?? this.masBarato(this.juegoB.tiendas);
 
     this.mostrandoComparacion = true;
     this.cdr.detectChanges();
