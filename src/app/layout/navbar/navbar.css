@@ -59,7 +59,8 @@
   top: 0;
   left: 0;
   width: 0;
-  height: 11rem;
+  /* mide lo mismo que la barra: la luz no se sale del header ni tapa la página */
+  height: 100%;
   pointer-events: none;
   /* cordón que baja del cable hasta la pantalla y viaja con la lámpara */
   background: linear-gradient(var(--color-cubiculo-2), var(--color-cubiculo-2)) center 10px / 1px 7px no-repeat;
@@ -82,7 +83,7 @@
   border-radius: 7px 7px 2px 2px;
   background: var(--color-monitor);
 }
-/* cono de luz que se derrama hacia la página */
+/* cono de luz que alumbra el enlace y se apaga antes del borde de la barra */
 .lampara::after {
   content: "";
   position: absolute;
@@ -90,7 +91,7 @@
   bottom: 0;
   left: -30%;
   right: -30%;
-  background: linear-gradient(to bottom, rgb(232 238 255 / 0.2), rgb(232 238 255 / 0.05) 45%, transparent);
+  background: linear-gradient(to bottom, rgb(232 238 255 / 0.22), rgb(232 238 255 / 0.08) 50%, transparent 90%);
   clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%);
   animation: zumbido 6s infinite;
 }
