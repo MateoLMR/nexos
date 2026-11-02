@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Nexos">
+  <!-- Logo de Nexos: el torii (la puerta entre dos mundos) en pixel art, con la moneda esperando en el portal.
+       Paleta Papiro: fondo de papiro, tinta azul y oro. -->
+  <rect width="64" height="64" rx="14" fill="#efe3c6" />
+  <g transform="translate(3.2 3.2) scale(0.9)">
+    <path d="M2 7 H10 V10 H54 V7 H62 V13 H58 V18 H6 V13 H2 Z" fill="#1f3a73" stroke="#b7862c" stroke-width="2" />
+    <rect x="10" y="24" width="44" height="6" fill="#1f3a73" stroke="#b7862c" stroke-width="2" />
+    <rect x="15" y="18" width="8" height="38" fill="#1f3a73" stroke="#b7862c" stroke-width="2" />
+    <rect x="41" y="18" width="8" height="38" fill="#1f3a73" stroke="#b7862c" stroke-width="2" />
+    <rect x="12" y="56" width="14" height="5" fill="#1f3a73" stroke="#b7862c" stroke-width="2" />
+    <rect x="38" y="56" width="14" height="5" fill="#1f3a73" stroke="#b7862c" stroke-width="2" />
+    <path d="M29 37 H35 V39 H37 V47 H35 V49 H29 V47 H27 V39 H29 Z" fill="#b7862c" />
+    <rect x="31" y="40" width="2" height="6" fill="#fff8e6" />
+  </g>
+</svg>
