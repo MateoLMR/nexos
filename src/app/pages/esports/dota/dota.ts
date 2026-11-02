@@ -123,7 +123,7 @@ export class Dota implements OnInit, OnDestroy {
             status: (m.status === 'running' ? 'LIVE' : 'UPCOMING') as 'LIVE' | 'UPCOMING',
             time: new Date(m.begin_at).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
             timestamp: new Date(m.begin_at).getTime(),
-            streamUrl: this.pandaService.getStreamByLeague(leagueName, m.live_url, m.serie?.name, m.tournament?.name, 'dota2'),
+            streamUrl: this.pandaService.canalDe(m, 'dota2'),
             league: leagueName,
           };
         })

@@ -1,7 +1,7 @@
 import { AfterViewInit, ChangeDetectorRef, Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { forkJoin, of, catchError, map, Subscription, timer, switchMap } from 'rxjs';
-import { PandaScoreService } from '../../core/services/pandascore';
+import { of, catchError, map, Subscription, timer, switchMap } from 'rxjs';
+import { ClaveEsport, PandaScoreService, PartidosPorJuego, Torneo } from '../../core/services/pandascore';
 import { MotionService } from '../../shared/utils/motion';
 import { Icono } from '../../shared/ui/icono';
 import { AficheDirective } from '../../shared/directives/afiche.directive';
@@ -16,15 +16,6 @@ interface EsportCard {
   imagen: string;
 }
 
-interface Evento {
-  juego: string;
-  color: string;
-  titulo: string;
-  fecha: string;
-  desde: string;
-  hasta: string;
-}
-
 interface PartidoVivo {
   id: string;
   juego: string;
@@ -35,6 +26,7 @@ interface PartidoVivo {
   logoA: string;
   logoB: string;
   enVivo: boolean;
+  inicio: number;
   hora: string;
 }
 
@@ -58,14 +50,13 @@ export class Esports implements OnInit, AfterViewInit, OnDestroy {
     { id: 'valorant', titulo: 'Valorant', genero: 'FPS', descripcion: 'Habilidades tácticas y puntería. El FPS que desafió el trono de CS.', color: '#ff4655', ruta: '/esports/valorant', imagen: 'Imagenes-esports/valorant.png' },
   ];
 
-  readonly eventos: (Evento & { estado: string })[] = [
-    { juego: 'League of Legends', color: '#c89b3c', titulo: 'Worlds 2026 · Estados Unidos', fecha: 'Oct – Nov 2026', desde: '2026-10-01', hasta: '2026-11-30' },
-    { juego: 'Valorant', color: '#ff4655', titulo: 'Champions Tour · Shanghái', fecha: '24 sep – 18 oct 2026', desde: '2026-09-24', hasta: '2026-10-18' },
-    { juego: 'Dota 2', color: '#c23c2a', titulo: 'Esports World Cup · Riad', fecha: '7 – 18 jul 2026', desde: '2026-07-07', hasta: '2026-07-18' },
-    { juego: 'Counter-Strike 2', color: '#f0a500', titulo: 'IEM Cologne 2026', fecha: '2 – 21 jun 2026', desde: '2026-06-02', hasta: '2026-06-21' },
-  ].map((e) => ({ ...e, estado: this.estado(e.desde, e.hasta) }));
+  // Torneos grandes que trae PandaScore (en curso, próximos y terminados recientes); null = cargando
+  torneos = signal<Torneo[] | null>(null);
+  torneosError = signal(false);
 
   partidos = signal<PartidoVivo[] | null>(null);
+  // La última consulta falló: se muestra "reintentando" en vez de "no hay partidos"
+  partidosError = signal(false);
 
   // Juegos (ids de las tarjetas) que tienen un partido en vivo ahora mismo
   enVivoIds = computed(() => {
@@ -80,20 +71,43 @@ export class Esports implements OnInit, AfterViewInit, OnDestroy {
   });
 
   ngOnInit(): void {
-    // Se pide al entrar y luego cada 60 segundos
-    this.sub = timer(0, 60_000).pipe(switchMap(() => this.pedirPartidos())).subscribe((lista) => {
+    // Se pide al entrar y luego cada 60 segundos. Un error no apaga el ciclo: el siguiente minuto reintenta.
+    this.sub = timer(0, 60_000).pipe(
+      switchMap((n) => this.panda.partidos(n > 0).pipe(
+        map((r) => this.aLista(r)),
+        catchError(() => of(null)),
+      )),
+    ).subscribe((lista) => {
+      if (lista === null) {
+        this.partidosError.set(true);
+        return; // se dejan los partidos que ya había, si había
+      }
       const anteriores = this.partidos();
+      this.partidosError.set(false);
       this.partidos.set(lista);
-      this.cdr.detectChanges();
-      if (anteriores === null) this.motion.entrar(document.querySelectorAll('.vivo-item'), { x: 30, stagger: 0.05 });
+      this.cdr.markForCheck();
+      if (anteriores === null) requestAnimationFrame(() => this.motion.entrar(document.querySelectorAll('.vivo-item'), { x: 30, stagger: 0.05 }));
+    });
+
+    this.panda.torneos().subscribe({
+      next: (t) => this.torneos.set(t),
+      error: () => { this.torneos.set([]); this.torneosError.set(true); },
     });
   }
 
   ngAfterViewInit(): void {
     this.motion.entrar(document.querySelectorAll('[data-entra]'), { y: 24, stagger: 0.08 });
-    document.querySelectorAll('.juego-afiche').forEach((el, i) =>
-      this.motion.alScroll(el, { y: -40, rotate: i % 2 ? 5 : -5, opacity: 0, ease: 'back.out(1.5)', duration: 0.9 })
-    );
+    // Un solo disparador para toda la pared: los afiches cambian de lugar cuando hay un partido en vivo,
+    // y un disparador por afiche se quedaría con la posición vieja (el afiche movido no aparecía)
+    const pared = document.querySelector('.pared-juegos');
+    const afiches = document.querySelectorAll('.juego-afiche');
+    if (pared && afiches.length && !this.motion.reducido()) {
+      this.motion.gsap.from(afiches, {
+        y: -40, rotate: (i: number) => (i % 2 ? 5 : -5), opacity: 0, ease: 'back.out(1.5)', duration: 0.9, stagger: 0.1,
+        clearProps: 'opacity,transform',
+        scrollTrigger: { trigger: pared, start: 'top 85%', once: true },
+      });
+    }
   }
 
   ngOnDestroy(): void {
@@ -101,22 +115,29 @@ export class Esports implements OnInit, AfterViewInit, OnDestroy {
     this.motion.limpiarScroll();
   }
 
-  private pedirPartidos() {
-    const juegos = [
-      { obs: this.panda.getValorantMatches(), juego: 'Valorant', ruta: '/esports/valorant' },
-      { obs: this.panda.getCS2Matches(), juego: 'CS2', ruta: '/esports/counter' },
-      { obs: this.panda.getLolMatches(), juego: 'LoL', ruta: '/esports/league' },
-      { obs: this.panda.getDota2Matches(), juego: 'Dota 2', ruta: '/esports/dota' },
+  private aLista(r: PartidosPorJuego): PartidoVivo[] {
+    const juegos: { clave: ClaveEsport; juego: string; ruta: string }[] = [
+      { clave: 'valorant', juego: 'Valorant', ruta: '/esports/valorant' },
+      { clave: 'cs2', juego: 'CS2', ruta: '/esports/counter' },
+      { clave: 'lol', juego: 'LoL', ruta: '/esports/league' },
+      { clave: 'dota2', juego: 'Dota 2', ruta: '/esports/dota' },
     ];
-    return forkJoin(juegos.map((j) => j.obs.pipe(
-      map((ms) => (ms ?? []).filter((m: any) => m?.opponents?.length === 2).map((m: any) => this.aPartido(m, j.juego, j.ruta))),
-      catchError(() => of([] as PartidoVivo[]))
-    ))).pipe(map((listas) => {
-      const todos = listas.flat();
-      const vivos = todos.filter((p) => p.enVivo);
-      // Si no hay nada en vivo se muestran los próximos
-      return (vivos.length ? vivos : todos).slice(0, 8);
-    }));
+    const todos = juegos.flatMap((j) => (r.partidos[j.clave] ?? [])
+      .filter((m: any) => m?.opponents?.length === 2)
+      .map((m: any) => this.aPartido(m, j.juego, j.ruta)));
+    const vivos = todos.filter((p) => p.enVivo);
+    // Si no hay nada en vivo se muestran los próximos, del más cercano al más lejano
+    return (vivos.length ? vivos : todos.sort((a, b) => a.inicio - b.inicio)).slice(0, 8);
+  }
+
+  /** "15 oct – 15 nov 2026" a partir de las fechas del torneo */
+  fechasTorneo(t: Torneo): string {
+    const f = (s: string, conAnio: boolean) => new Date(s).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', ...(conAnio ? { year: 'numeric' } : {}) });
+    return t.hasta && t.hasta.slice(0, 10) !== t.desde.slice(0, 10) ? `${f(t.desde, false)} – ${f(t.hasta, true)}` : f(t.desde, true);
+  }
+
+  estadoTorneo(t: Torneo): string {
+    return { en_curso: 'En curso', proximo: 'Próximo', terminado: 'Terminado' }[t.estado];
   }
 
   private aPartido(m: any, juego: string, ruta: string): PartidoVivo {
@@ -127,6 +148,7 @@ export class Esports implements OnInit, AfterViewInit, OnDestroy {
       a: a?.acronym || a?.name, b: b?.acronym || b?.name,
       logoA: a?.image_url ?? '', logoB: b?.image_url ?? '',
       enVivo: m.status === 'running',
+      inicio: new Date(m.begin_at).getTime(),
       hora: new Date(m.begin_at).toLocaleString('es-CO', { weekday: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
     };
   }
@@ -139,12 +161,5 @@ export class Esports implements OnInit, AfterViewInit, OnDestroy {
     const img = e.target as HTMLImageElement;
     img.onerror = null;
     img.src = 'Imagenes/usuario.png';
-  }
-
-  private estado(desde: string, hasta: string) {
-    const hoy = new Date();
-    if (hoy < new Date(desde)) return 'Próximo';
-    if (hoy > new Date(`${hasta}T23:59:59`)) return 'Terminado';
-    return 'En curso';
   }
 }

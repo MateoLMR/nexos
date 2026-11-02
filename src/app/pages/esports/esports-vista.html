@@ -36,6 +36,7 @@
 
     <div class="mt-6" aria-live="polite">
       @if (cargando()) {
+        <p class="mb-4 text-sm text-monitor-2">Prendiendo los equipos…</p>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           @for (n of [1, 2, 3]; track n) { <div class="cargando-bloque h-48"></div> }
         </div>

@@ -39,5 +39,6 @@ export const routes: Routes = [
   // Panel de administración (solo administradores; se carga aparte para no pesar en el resto del sitio)
   { path: 'admin', canActivate: [adminGuard], loadComponent: () => import('./pages/admin/admin').then((m) => m.Admin) },
   { path: 'admin/juego/:id', canActivate: [adminGuard], loadComponent: () => import('./pages/admin/editar-juego').then((m) => m.EditarJuego) },
-
+  // Cualquier otra dirección: puesto "fuera de servicio"
+  { path: '**', loadComponent: () => import('./pages/no-encontrado/no-encontrado').then((m) => m.NoEncontrado) },
 ];

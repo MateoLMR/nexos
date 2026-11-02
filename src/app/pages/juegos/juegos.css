@@ -1,6 +1,40 @@
 .destacado { background: var(--color-cubiculo); color: inherit; text-decoration: none; }
 .destacado-velo { background: linear-gradient(to top, rgb(20 18 28 / 0.96) 10%, rgb(20 18 28 / 0.55) 50%, rgb(20 18 28 / 0.05)); }
 
+/* ---------- cartelera del destacado ---------- */
+.cartel-portada { opacity: 0; transform: scale(1.04); transition: opacity 0.9s var(--ease-salida), transform 6s linear; }
+.cartel-portada.activa { opacity: 1; transform: scale(1); }
+.cartel-texto { animation: cartel-entra 0.6s var(--ease-salida) both; }
+@keyframes cartel-entra { from { opacity: 0; transform: translateY(14px); } }
+
+.cartel-selector { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; }
+.cartel-boton {
+  position: relative;
+  min-height: 3.5rem;
+  padding: 0.55rem 0.75rem 0.8rem;
+  border: 1px solid var(--color-cubiculo-2);
+  border-radius: var(--radius-cubiculo);
+  background: var(--color-pared-2);
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+.cartel-boton:hover { border-color: #4b3a78; }
+.cartel-boton.activo { border-color: var(--color-ambar); background: var(--color-cubiculo); }
+/* La barrita se llena mientras falta para el siguiente */
+.cartel-progreso { position: absolute; inset: auto 0 0 0; height: 3px; background: transparent; }
+.cartel-progreso i { display: block; height: 100%; background: var(--color-ambar); transform-origin: left; animation: cartel-llenar linear both; }
+@keyframes cartel-llenar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+@media (max-width: 639px) {
+  .cartel-selector { grid-template-columns: 1fr; }
+  .cartel-boton { min-height: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cartel-portada { transition: opacity 0.2s; transform: none; }
+  .cartel-progreso { display: none; }
+}
+
 /* Barra fija bajo el mostrador */
 .filtros {
   position: sticky;
@@ -38,11 +72,11 @@
 .juego-card, .lista-card {
   color: inherit;
   text-decoration: none;
-  transition: border-color 0.25s, transform 0.35s var(--ease-salida), background-color 0.25s;
+  transition: border-color 0.25s, transform 0.35s var(--ease-salida), background-color 0.25s, box-shadow 0.35s var(--ease-salida);
 }
 .juego-card { display: flex; flex-direction: column; overflow: hidden; }
 .juego-card:hover, .lista-card:hover { border-color: var(--color-ambar); transform: translateY(-4px); }
-.juego-card .portada { transition: transform 0.8s var(--ease-salida); }
+.juego-card .portada { transition: transform 0.8s var(--ease-salida), filter 0.35s var(--ease-salida); }
 .juego-card:hover .portada { transform: scale(1.05); }
 .ver { transition: gap 0.25s var(--ease-salida); }
 .juego-card:hover .ver { gap: 0.6rem; }

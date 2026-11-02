@@ -5,7 +5,7 @@ import {
   ArrowLeft, ArrowRight, Calendar, Check, ChevronDown, ChevronUp, Clock, ExternalLink, Gamepad2, Heart,
   Image, LayoutGrid, List, LogIn, LogOut, MessageCircle, Minus, Monitor, Play, Plus, Radio,
   Scale, Search, Send, Store, Tag, Trophy, TriangleAlert, User, X, Swords, Tv, Eye, ArrowLeftRight,
-  Pencil, Trash2, Upload, RefreshCw, ArrowUp, ArrowDown, Settings,
+  Pencil, Trash2, Upload, RefreshCw, ArrowUp, ArrowDown, Settings, Volume2, Globe, Sparkles,
   type IconNode,
 } from 'lucide';
 
@@ -18,7 +18,7 @@ const ICONOS: Record<string, IconNode> = {
   scale: Scale, search: Search, send: Send, store: Store, tag: Tag, trophy: Trophy,
   alert: TriangleAlert, user: User, x: X, swords: Swords, swap: ArrowLeftRight, tv: Tv, eye: Eye,
   pencil: Pencil, trash: Trash2, upload: Upload, refresh: RefreshCw, 'arrow-up': ArrowUp, 'arrow-down': ArrowDown,
-  settings: Settings,
+  settings: Settings, volume: Volume2, globe: Globe, sparkles: Sparkles,
 };
 
 export type NombreIcono = keyof typeof ICONOS;

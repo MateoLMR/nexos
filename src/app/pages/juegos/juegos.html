@@ -10,28 +10,76 @@
     </div>
 
     <div class="lg:col-span-7">
-      @if (juegoDestacado; as d) {
-        <a appAfiche="5" [routerLink]="['/juego', d.id]" class="afiche afiche-der destacado block overflow-hidden"
-           (pointerdown)="transicion.set('destacado')" (keydown.enter)="transicion.set('destacado')">
-          <div class="relative min-h-[24rem] md:min-h-0 md:aspect-[16/8]">
-            <img [src]="d.imagen" [alt]="'Arte de ' + d.titulo" class="absolute inset-0 h-full w-full object-cover object-top"
-                 [style.view-transition-name]="transicion() === 'destacado' ? 'portada-juego' : null" />
-            <div class="absolute inset-0 destacado-velo"></div>
-            <div class="absolute inset-x-0 bottom-0 p-6 sm:p-8 flex flex-wrap items-end justify-between gap-4">
-              <div class="max-w-md">
-                <h2 class="letrero text-4xl sm:text-5xl text-monitor">{{ d.titulo }}</h2>
-                <p class="mt-2 text-monitor/85">{{ d.descripcion }}</p>
-              </div>
-              @if (mejorPrecio(); as p) {
-                <div class="text-right">
-                  <p class="text-xs text-monitor-2">Mejor precio · {{ p.nombre }}</p>
-                  <p class="font-mono text-3xl text-ambar tabular" [appContador]="p.precio" [contadorRetraso]="0.4">{{ p.precio }}</p>
+      @if (cartel(); as c) {
+        <!-- Cartelera: cambia sola cada 7 s; se detiene mientras la miras o la recorres con el teclado -->
+        <section class="cartelera" aria-roledescription="carrusel" aria-label="Destacados del local"
+                 (mouseenter)="pausado.set(true)" (mouseleave)="pausado.set(false)"
+                 (focusin)="pausado.set(true)" (focusout)="pausado.set(false)">
+          @if (c.id) {
+            <a appAfiche="5" class="afiche afiche-der destacado block overflow-hidden" [routerLink]="['/juego', c.id]"
+               (pointerdown)="transicion.set('destacado')" (keydown.enter)="transicion.set('destacado')">
+              <ng-container *ngTemplateOutlet="caraCartel; context: { $implicit: c }" />
+            </a>
+          } @else {
+            <a appAfiche="5" class="afiche afiche-der destacado block overflow-hidden" [href]="c.enlaceExterno" target="_blank" rel="noopener">
+              <ng-container *ngTemplateOutlet="caraCartel; context: { $implicit: c }" />
+            </a>
+          }
+          <ng-template #caraCartel let-c>
+            <div class="relative min-h-[24rem] md:min-h-0 md:aspect-[16/8]">
+              <!-- Las tres portadas apiladas: la activa aparece y las otras se desvanecen -->
+              @for (k of carteles(); track k.tipo; let i = $index) {
+                <img [src]="k.imagen" [alt]="i === actual() ? 'Arte de ' + k.titulo : ''" [attr.aria-hidden]="i !== actual()"
+                     class="cartel-portada absolute inset-0 h-full w-full object-cover object-top" [class.activa]="i === actual()"
+                     [attr.loading]="i === 0 ? null : 'lazy'"
+                     [style.view-transition-name]="i === actual() && transicion() === 'destacado' && c.id ? 'portada-juego' : null" />
+              }
+              <div class="absolute inset-0 destacado-velo"></div>
+              <span class="ficha ficha-sobre-foto absolute left-5 top-5 sm:left-8 sm:top-7">
+                <app-icono [nombre]="c.tipo === 'barato' ? 'tag' : c.tipo === 'lanzado' ? 'sparkles' : 'plus'" [tam]="14" />
+                {{ c.etiqueta }}
+              </span>
+              @for (k of [c]; track k.tipo) {
+                <div class="cartel-texto absolute inset-x-0 bottom-0 p-6 sm:p-8 flex flex-wrap items-end justify-between gap-4" aria-live="polite">
+                  <div class="max-w-md">
+                    <h2 class="letrero text-4xl sm:text-5xl text-monitor">{{ k.titulo }}</h2>
+                    <p class="mt-2 text-monitor/85 line-clamp-2">{{ k.descripcion }}</p>
+                  </div>
+                  @if (k.precio; as p) {
+                    <div class="text-right">
+                      <p class="text-xs text-monitor-2">
+                        @if (k.descuento > 0) { <span class="ficha ficha-vivo mr-1">-{{ k.descuento }}%</span> }
+                        {{ k.rotulo }}
+                      </p>
+                      <p class="font-mono text-3xl text-ambar tabular">{{ p.precio }}</p>
+                    </div>
+                  } @else if (!k.id) {
+                    <p class="text-sm text-monitor-2 inline-flex items-center gap-1.5">Aún no está en el local · Ver en RAWG <app-icono nombre="external-link" [tam]="14" /></p>
+                  }
                 </div>
               }
             </div>
-          </div>
-        </a>
-      } @else if (!cargado) {
+          </ng-template>
+
+          @if (carteles().length > 1) {
+            <div class="cartel-selector mt-5" role="group" aria-label="Elegir destacado">
+              @for (k of carteles(); track k.tipo; let i = $index) {
+                <button type="button" class="cartel-boton" [class.activo]="i === actual()" [attr.aria-pressed]="i === actual()" (click)="verCartel(i)">
+                  <span class="block text-left">
+                    <span class="block text-xs text-monitor-2">{{ k.etiqueta }}</span>
+                    <span class="block truncate text-sm font-medium text-monitor">{{ k.titulo }}</span>
+                  </span>
+                  <span class="cartel-progreso" aria-hidden="true">
+                    @if (i === actual()) {
+                      <i [style.animation-duration.ms]="rotacionMs" [style.animation-play-state]="pausado() ? 'paused' : 'running'"></i>
+                    }
+                  </span>
+                </button>
+              }
+            </div>
+          }
+        </section>
+      } @else if (!cargado || !carteles().length) {
         <div class="cargando-bloque aspect-[16/8]"></div>
       }
     </div>
@@ -78,7 +126,7 @@
       <div class="vacio">
         <app-icono nombre="alert" [tam]="28" class="text-alerta" />
         <p class="letrero text-2xl text-monitor mt-3">No pudimos cargar los juegos</p>
-        <p class="text-monitor-2 mt-1">Revisa tu conexión y recarga la página.</p>
+        <p class="text-monitor-2 mt-1">Parece que se cayó el internet del local. Revisa tu conexión y recarga la página.</p>
       </div>
     } @else if (cargado && totalFiltrados() === 0) {
       <div class="vacio">
@@ -87,6 +135,7 @@
         <p class="text-monitor-2 mt-1">Prueba con otro nombre o <a routerLink="/foro" class="text-ambar underline">pide que lo traigamos en el foro</a>.</p>
       </div>
     } @else if (!cargado) {
+      <p class="mb-4 text-sm text-monitor-2">Prendiendo los equipos…</p>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         @for (n of [1, 2, 3, 4, 5, 6]; track n) { <div class="cargando-bloque aspect-[4/3]"></div> }
       </div>
@@ -96,6 +145,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         @for (j of juegosVisibles; track j.id) {
           <a [routerLink]="['/juego', j.id]" class="juego-card cubiculo" [attr.data-flip-id]="j.id"
+             [attr.data-bit]="descuentos()[j.id] ? 'juego' : null" [attr.data-bit-descuento]="descuentos()[j.id] ?? null"
              (pointerdown)="transicion.set(j.id)" (keydown.enter)="transicion.set(j.id)">
             <div class="relative aspect-[16/10] overflow-hidden">
               <img [src]="j.imagen" [alt]="'Portada de ' + j.titulo" class="h-full w-full object-cover portada" loading="lazy"
@@ -116,6 +166,7 @@
       <div class="flex flex-col gap-3">
         @for (j of juegosVisibles; track j.id) {
           <a [routerLink]="['/juego', j.id]" class="lista-card cubiculo" [attr.data-flip-id]="j.id"
+             [attr.data-bit]="descuentos()[j.id] ? 'juego' : null" [attr.data-bit-descuento]="descuentos()[j.id] ?? null"
              (pointerdown)="transicion.set(j.id)" (keydown.enter)="transicion.set(j.id)">
             <img [src]="j.imagen" [alt]="'Portada de ' + j.titulo" class="w-32 sm:w-44 aspect-[16/10] object-cover rounded-sm shrink-0" loading="lazy"
                  [style.view-transition-name]="transicion() === j.id ? 'portada-juego' : null" />

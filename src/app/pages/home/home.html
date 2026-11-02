@@ -45,7 +45,7 @@
                   Ese juego aún no está en el local.
                   <a routerLink="/foro" class="text-ambar underline" (mousedown)="$event.preventDefault()">Pregúntalo en el foro</a>
                 } @else {
-                  Cargando juegos…
+                  Prendiendo los equipos…
                 }
               </li>
             }
@@ -64,7 +64,7 @@
     <div class="lg:col-span-5 pared" aria-label="Lo que hay hoy en el local">
 
       <!-- Precios de hoy -->
-      <article appAfiche class="afiche tablero">
+      <article appAfiche class="afiche tablero" data-bit="precios">
         <header class="flex items-center justify-between gap-3 px-5 pt-5">
           <h2 class="letrero text-2xl text-ambar">Precios de hoy</h2>
           <app-icono nombre="tag" [tam]="20" class="text-ambar" />
@@ -93,7 +93,7 @@
       </article>
 
       <!-- Partido -->
-      <article appAfiche class="afiche afiche-der partido">
+      <article appAfiche class="afiche afiche-der partido" [attr.data-bit]="partido()?.enVivo ? 'vivo' : null">
         @if (partido(); as p) {
           <a routerLink="/esports" class="block p-5">
             <div class="flex items-center justify-between gap-2">
@@ -118,7 +118,7 @@
       </article>
 
       <!-- Dudas nuevas -->
-      <article appAfiche class="afiche dudas">
+      <article appAfiche class="afiche dudas" data-bit="dudas">
         <a routerLink="/foro" class="block p-5">
           <div class="flex items-center justify-between">
             <h2 class="letrero text-xl text-monitor">Dudas en el tablero</h2>
@@ -209,29 +209,36 @@
     <div class="titulo-seccion flex flex-wrap items-end justify-between gap-4">
       <div>
         <h2 class="letrero text-[clamp(2.25rem,4.5vw,3.5rem)] text-monitor">Cartelera de torneos</h2>
-        <p class="mt-3 text-lg text-monitor-2">Los afiches que este año pegamos en la pared.</p>
+        <p class="mt-3 text-lg text-monitor-2">Los afiches de los torneos que se están jugando y los que vienen.</p>
       </div>
       <a routerLink="/esports" class="boton boton-linea">Todos los partidos <app-icono nombre="arrow-right" [tam]="18" /></a>
     </div>
 
     <div class="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-      @for (t of torneos; track t.titulo; let i = $index) {
-        <a appAfiche [href]="t.url" target="_blank" rel="noopener" class="torneo afiche block overflow-hidden"
-           [class.afiche-der]="i % 2 === 1">
-          <div class="relative aspect-[3/4]">
-            <img [src]="t.imagen" alt="" class="absolute inset-0 h-full w-full object-cover" loading="lazy" />
-            <div class="absolute inset-0 torneo-velo"></div>
-            <div class="absolute inset-x-0 bottom-0 p-5">
-              <span class="ficha" [class]="t.estado === 'En curso' ? 'ficha-vivo' : t.estado === 'Próximo' ? 'ficha-ambar' : 'ficha-tenue'">
-                @if (t.estado === 'En curso') { <span class="punto-vivo"></span> }
-                {{ t.estado }}
-              </span>
-              <h3 class="letrero text-2xl text-monitor mt-3">{{ t.titulo }}</h3>
-              <p class="text-sm text-monitor-2">{{ t.lugar }} · {{ t.fechas }}</p>
+      @if (torneos(); as lista) {
+        @for (t of lista; track t.id; let i = $index) {
+          <a appAfiche [routerLink]="t.ruta" class="torneo afiche block overflow-hidden" [class.afiche-der]="i % 2 === 1">
+            <div class="relative aspect-[3/4]">
+              <img [src]="t.imagen" alt="" class="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+              <div class="absolute inset-0 torneo-velo"></div>
+              @if (t.logo) {
+                <img [src]="t.logo" alt="" class="torneo-logo absolute top-4 right-4 h-12 w-12 object-contain" loading="lazy" />
+              }
+              <div class="absolute inset-x-0 bottom-0 p-5">
+                <span class="ficha" [class]="t.estado === 'En curso' ? 'ficha-vivo' : t.estado === 'Próximo' ? 'ficha-ambar' : 'ficha-tenue'">
+                  @if (t.estado === 'En curso') { <span class="punto-vivo"></span> }
+                  {{ t.estado }}
+                </span>
+                <h3 class="letrero text-2xl text-monitor mt-3">{{ t.titulo }}</h3>
+                <p class="text-sm text-monitor-2">{{ t.juego }} · {{ t.fechas }}</p>
+              </div>
             </div>
-          </div>
-          <span class="sr-only">(se abre en otra pestaña)</span>
-        </a>
+          </a>
+        } @empty {
+          <p class="text-monitor-2 sm:col-span-2 lg:col-span-4">Reiniciando el módem… la cartelera de torneos vuelve en un rato.</p>
+        }
+      } @else {
+        @for (n of [1, 2, 3, 4]; track n) { <div class="cargando-bloque aspect-[3/4]"></div> }
       }
     </div>
   </section>

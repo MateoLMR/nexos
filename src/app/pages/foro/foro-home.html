@@ -74,6 +74,7 @@
       <!-- Publicaciones -->
       <div class="mt-4 space-y-4" aria-live="polite">
         @if (!cargado) {
+          <p class="text-sm text-monitor-2">Prendiendo los equipos…</p>
           @for (n of [1, 2, 3]; track n) { <div class="cargando-bloque h-40"></div> }
         } @else if (errorCarga) {
           <div class="vacio">
@@ -84,7 +85,7 @@
         }
 
         @for (post of visibles; track post.id) {
-          <article class="publicacion cubiculo" [attr.data-post]="post.id">
+          <article class="publicacion cubiculo" [attr.data-post]="post.id" data-bit="post">
             <div class="p-5 sm:p-6">
               <header class="flex items-center gap-3">
                 @if (post.userPhoto) {

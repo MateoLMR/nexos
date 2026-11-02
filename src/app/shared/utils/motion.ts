@@ -44,6 +44,37 @@ export class MotionService {
       .to(el, { opacity: 1, duration: 0.25, ease: 'power2.out', delay: 0.1 });
   }
 
+  // "El local se enciende": la sala está a oscuras y las luces se prenden con el parpadeo de un tubo
+  // (~1 s); luego los puestos (afiches y lámpara) se encienden uno a uno. Pasa en la primera visita de la
+  // sesión y cada vez que alguien inicia sesión (forzar = true).
+  encenderLocal(elementos: Element[] | NodeListOf<Element>, forzar = false) {
+    const lista = Array.from(elementos);
+    let yaAbierto: string | null = null;
+    try { yaAbierto = sessionStorage.getItem('nexos-local'); } catch { /* sin storage */ }
+    if (this.reducido() || (yaAbierto && !forzar)) return;
+    try { sessionStorage.setItem('nexos-local', '1'); } catch { /* sin storage: igual se anima */ }
+
+    // La sala a oscuras: un velo del color de la pared que parpadea hasta desaparecer
+    const velo = document.createElement('div');
+    velo.setAttribute('aria-hidden', 'true');
+    velo.style.cssText = 'position:fixed;inset:0;z-index:60;pointer-events:none;background:#0b0a10;opacity:0.92';
+    document.body.appendChild(velo);
+    gsap.timeline({ onComplete: () => velo.remove() })
+      .to(velo, { opacity: 0.35, duration: 0.05, delay: 0.25 })
+      .to(velo, { opacity: 0.85, duration: 0.05, delay: 0.07 })
+      .to(velo, { opacity: 0.2, duration: 0.05, delay: 0.1 })
+      .to(velo, { opacity: 0.6, duration: 0.04, delay: 0.05 })
+      .to(velo, { opacity: 0, duration: 0.35, ease: 'power2.out', delay: 0.08 });
+
+    lista.forEach((el, i) => {
+      gsap.timeline({ delay: 0.75 + i * 0.12 })
+        .set(el, { filter: 'brightness(0.2)' })
+        .to(el, { filter: 'brightness(1)', duration: 0.04 })
+        .to(el, { filter: 'brightness(0.35)', duration: 0.04, delay: 0.06 })
+        .to(el, { filter: 'brightness(1)', duration: 0.18, ease: 'power2.out', delay: 0.05, clearProps: 'filter' });
+    });
+  }
+
   // Entrada escalonada (para listas: filas del tablero, tarjetas)
   entrar(elementos: Element[] | NodeListOf<Element>, opciones: { y?: number; x?: number; stagger?: number; delay?: number } = {}) {
     const lista = Array.from(elementos);

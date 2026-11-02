@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef, inject, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DetalleJuegosService, DetalleJuego, Tienda } from '../../core/services/detalle-juegos';
+import { PaisService } from '../../core/services/pais';
 import { JuegosService, Juego } from '../../core/services/juegos';
 import { MotionService } from '../../shared/utils/motion';
 import { Icono } from '../../shared/ui/icono';
@@ -22,6 +23,7 @@ interface RatingComparado {
 })
 export class Comparar implements OnInit, OnDestroy {
   private svc = inject(DetalleJuegosService);
+  private paisSvc = inject(PaisService);
   private juegosSvc = inject(JuegosService);
   private motion = inject(MotionService);
   private route = inject(ActivatedRoute);
@@ -114,8 +116,8 @@ export class Comparar implements OnInit, OnDestroy {
     const prom = (j: DetalleJuego) => (j.ratings.length ? Math.round(j.ratings.reduce((s, r) => s + r.valor, 0) / j.ratings.length) : 0);
     this.promedioA = prom(this.juegoA);
     this.promedioB = prom(this.juegoB);
-    // Precio de hoy (CheapShark): la tienda popular más barata; null si no se vende en PC
-    const hoy = await this.svc.getPreciosDeHoy().catch(() => []);
+    // Precio de hoy en el país elegido: la tienda popular más barata; null si no se vende en PC
+    const hoy = await this.svc.getPreciosDeHoy(this.paisSvc.pais()).catch(() => []);
     this.precioA = DetalleJuegosService.tiendaDeHoy(hoy, this.juegoA.id);
     this.precioB = DetalleJuegosService.tiendaDeHoy(hoy, this.juegoB.id);
 

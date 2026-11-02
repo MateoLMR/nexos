@@ -16,7 +16,7 @@
     <div class="vivo-lista" aria-live="polite">
       @if (partidos(); as lista) {
         @for (p of lista; track p.id) {
-          <a [routerLink]="p.ruta" class="vivo-item">
+          <a [routerLink]="p.ruta" class="vivo-item" [attr.data-bit]="p.enVivo ? 'vivo' : null">
             <span class="flex items-center justify-between gap-2">
               @if (p.enVivo) {
                 <span class="ficha ficha-vivo"><span class="punto-vivo"></span> en vivo</span>
@@ -35,8 +35,14 @@
             <span class="mt-1 block text-xs text-monitor-2 truncate">{{ p.liga }}</span>
           </a>
         } @empty {
-          <p class="px-1 py-4 text-monitor-2">No hay partidos confirmados en este momento.</p>
+          @if (partidosError()) {
+            <p class="px-1 py-4 text-monitor-2">Reiniciando el módem… volvemos a intentar en un minuto.</p>
+          } @else {
+            <p class="px-1 py-4 text-monitor-2">No hay partidos confirmados en este momento.</p>
+          }
         }
+      } @else if (partidosError()) {
+        <p class="px-1 py-4 text-monitor-2">Reiniciando el módem… volvemos a intentar en un minuto.</p>
       } @else {
         @for (n of [1, 2, 3, 4]; track n) { <div class="cargando-bloque h-28 min-w-60"></div> }
       }
@@ -47,7 +53,7 @@
   <section class="mt-20" aria-labelledby="titulo-juegos">
     <h2 id="titulo-juegos" class="letrero text-[clamp(2rem,4vw,3rem)] text-monitor">Los cuatro grandes</h2>
     <!-- Pared desigual: el juego que tiene partido en vivo ocupa el afiche grande -->
-    <div class="mt-8 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:grid-rows-2">
+    <div class="pared-juegos mt-8 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:grid-rows-2">
       @for (c of cardsOrdenadas(); track c.id; let i = $index) {
         <a appAfiche [routerLink]="c.ruta" class="juego-afiche afiche flex flex-col overflow-hidden"
            [class.afiche-der]="i % 2 === 1"
@@ -70,20 +76,34 @@
 
   <!-- ============ CALENDARIO ============ -->
   <section class="mt-20" aria-labelledby="titulo-calendario">
-    <h2 id="titulo-calendario" class="letrero text-[clamp(2rem,4vw,3rem)] text-monitor">Torneos del año</h2>
+    <h2 id="titulo-calendario" class="letrero text-[clamp(2rem,4vw,3rem)] text-monitor">Torneos</h2>
+    <p class="mt-2 text-monitor-2">Los grandes que se están jugando, los que vienen y los que acaban de terminar.</p>
     <ol class="mt-6 cubiculo divide-y divide-cubiculo-2" role="list">
-      @for (e of eventos; track e.titulo) {
-        <li class="evento">
-          <div class="min-w-0 flex-1">
-            <p class="text-monitor font-medium">{{ e.titulo }}</p>
-            <p class="text-sm text-monitor-2">{{ e.juego }}</p>
-          </div>
-          <p class="font-mono text-sm text-monitor-2 tabular hidden sm:block">{{ e.fecha }}</p>
-          <span class="ficha" [class]="e.estado === 'En curso' ? 'ficha-vivo' : e.estado === 'Próximo' ? 'ficha-ambar' : 'ficha-tenue'">
-            @if (e.estado === 'En curso') { <span class="punto-vivo"></span> }
-            {{ e.estado }}
-          </span>
-        </li>
+      @if (torneos(); as lista) {
+        @for (t of lista; track t.id) {
+          <li class="evento" [class.evento-terminado]="t.estado === 'terminado'">
+            @if (t.imagen) {
+              <img [src]="t.imagen" alt="" class="h-9 w-9 shrink-0 object-contain" loading="lazy" />
+            } @else {
+              <span class="h-9 w-9 shrink-0 grid place-items-center rounded-sm bg-pared-2 text-monitor-2"><app-icono nombre="trophy" [tam]="18" /></span>
+            }
+            <div class="min-w-0 flex-1">
+              <p class="text-monitor font-medium truncate">{{ t.titulo }}</p>
+              <p class="text-sm text-monitor-2">{{ t.nombreJuego }}</p>
+            </div>
+            <p class="font-mono text-sm text-monitor-2 tabular hidden sm:block">{{ fechasTorneo(t) }}</p>
+            <span class="ficha" [class]="t.estado === 'en_curso' ? 'ficha-vivo' : t.estado === 'proximo' ? 'ficha-ambar' : 'ficha-tenue'">
+              @if (t.estado === 'en_curso') { <span class="punto-vivo"></span> }
+              {{ estadoTorneo(t) }}
+            </span>
+          </li>
+        } @empty {
+          <li class="evento text-monitor-2">
+            {{ torneosError() ? 'Reiniciando el módem… la cartelera de torneos vuelve en un rato.' : 'No hay torneos grandes en la cartelera ahora mismo.' }}
+          </li>
+        }
+      } @else {
+        @for (n of [1, 2, 3]; track n) { <li class="evento"><div class="cargando-bloque h-10 w-full"></div></li> }
       }
     </ol>
   </section>

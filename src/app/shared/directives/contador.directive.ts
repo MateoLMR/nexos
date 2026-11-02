@@ -29,17 +29,18 @@ export class ContadorDirective {
       return;
     }
     const [, pre, num, suf] = m;
-    // Decide si "." es separador de miles (157.600) o decimal (8.99)
-    const usaMilesConPunto = /^\d{1,3}(\.\d{3})+$/.test(num);
-    const decimales = !usaMilesConPunto && num.includes('.') ? num.split('.')[1].length : 0;
-    const objetivo = usaMilesConPunto ? Number(num.replace(/\./g, '')) : Number(num.replace(/,/g, ''));
+    // Formato colombiano: "." separa miles y "," los decimales ("1.249,90"). También acepta "8.99".
+    const conComa = num.includes(',');
+    const usaMilesConPunto = conComa || /^\d{1,3}(\.\d{3})+$/.test(num);
+    const decimales = conComa ? num.split(',')[1].length : !usaMilesConPunto && num.includes('.') ? num.split('.')[1].length : 0;
+    const objetivo = usaMilesConPunto ? Number(num.replace(/\./g, '').replace(',', '.')) : Number(num);
     if (!isFinite(objetivo)) {
       nodo.textContent = texto;
       return;
     }
     const fmt = (n: number) =>
       usaMilesConPunto
-        ? Math.round(n).toLocaleString('es-CO')
+        ? n.toLocaleString('es-CO', { minimumFractionDigits: decimales, maximumFractionDigits: decimales })
         : decimales ? n.toFixed(decimales) : String(Math.round(n));
 
     const estado = { n: this.anterior };

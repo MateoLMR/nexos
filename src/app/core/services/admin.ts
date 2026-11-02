@@ -40,7 +40,7 @@ export interface JuegoAdmin {
   plataformas: string | null;
   creador: string | null;
   steam_app_id: string | null;
-  cheapshark_id: string | null;
+  itad_id: string | null;
   gog_slug: string | null;
   rawg_slug: string | null;
   ratings: { label: string; valor: number }[];

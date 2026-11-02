@@ -8,6 +8,8 @@ import { environment } from '../../../environments/environment';
 // Solo a nuestra API: el token no se envía a otros dominios (PandaScore, etc.).
 export const tokenInterceptor: HttpInterceptorFn = (req, next) => {
   if (!req.url.startsWith(environment.apiUrl)) return next(req);
+  // Rutas públicas: no necesitan sesión y así no esperan a Firebase
+  if (/\/api\/(pandascore|precios|plataformas)\b/.test(req.url)) return next(req);
 
   const user = inject(Auth).currentUser;
   if (!user) return next(req);

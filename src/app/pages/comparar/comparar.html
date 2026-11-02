@@ -90,7 +90,7 @@
             <span class="font-mono text-3xl lado-b-texto" [appContador]="promedioB">{{ promedioB }}</span>
           </div>
         </div>
-        <div class="veredicto cubiculo p-6 precio">
+        <div class="veredicto cubiculo p-6 precio" data-bit="comparar" [attr.data-bit-ganador]="masBaratoGlobal">
           @if (masBaratoGlobal; as m) {
             <p class="letrero text-3xl text-ambar">
               @switch (m) {

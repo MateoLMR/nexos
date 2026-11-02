@@ -25,6 +25,8 @@
 .franja { border-top: 4px solid var(--juego); }
 
 .evento { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.25rem; }
+/* Los terminados quedan en la cartelera, pero más apagados */
+.evento-terminado { opacity: 0.7; }
 
 /* El logo de CS:GO es negro: se aclara para que se lea sobre la pared */
 .logo-claro { filter: brightness(0) invert(0.92); }

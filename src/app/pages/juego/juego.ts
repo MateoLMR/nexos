@@ -7,6 +7,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { DetalleJuegosService, DetalleJuego, MediaItem, PreciosJuego, PlataformasJuego } from '../../core/services/detalle-juegos';
 import { JuegosService } from '../../core/services/juegos';
+import { CodigoPais, PaisService } from '../../core/services/pais';
 import { MotionService } from '../../shared/utils/motion';
 import { Icono } from '../../shared/ui/icono';
 import { ContadorDirective } from '../../shared/directives/contador.directive';
@@ -22,6 +23,7 @@ import { VideoDirective } from '../../shared/directives/video.directive';
 export class Juego implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('hero') hero?: ElementRef<HTMLElement>;
   @ViewChild('cerrarLightbox') cerrarLightbox?: ElementRef<HTMLButtonElement>;
+  @ViewChild('tira') tira?: ElementRef<HTMLElement>;
 
   private route = inject(ActivatedRoute);
   private detalleSvc = inject(DetalleJuegosService);
@@ -35,12 +37,15 @@ export class Juego implements OnInit, AfterViewInit, OnDestroy {
 
   mediaActual = signal<MediaItem | null>(null);
   indexActual = signal(0);
+  videoSinSonido = signal(false);
   modalSrc = signal('');
   modalAbierto = signal(false);
 
   relacionados: { id: string; titulo: string; imagen: string; tipo: string }[] = [];
 
-  // Precios en vivo (CheapShark) y plataformas (RAWG); llegan después del detalle
+  readonly paisSvc = inject(PaisService);
+
+  // Precios del país elegido (IsThereAnyDeal + Steam) y plataformas (RAWG); llegan después del detalle
   precios = signal<PreciosJuego | null>(null);
   preciosEstado = signal<'cargando' | 'listo' | 'error'>('cargando');
   plataformas = signal<PlataformasJuego | null>(null);
@@ -136,12 +141,29 @@ export class Juego implements OnInit, AfterViewInit, OnDestroy {
 
   // ---------- precios en vivo y plataformas ----------
   private cargarPreciosYPlataformas(id: string) {
-    this.detalleSvc.getPrecios(id).then(
-      (p) => { if (id === this.juegoId) { this.precios.set(p); this.preciosEstado.set('listo'); } },
-      () => { if (id === this.juegoId) this.preciosEstado.set('error'); },
-    );
+    this.cargarPrecios(id);
     // Si RAWG falla, simplemente no se muestran las otras plataformas
     this.detalleSvc.getPlataformas(id).then((p) => { if (id === this.juegoId) this.plataformas.set(p); }, () => {});
+  }
+
+  private cargarPrecios(id: string) {
+    const pais = this.paisSvc.pais();
+    this.detalleSvc.getPrecios(id, pais).then(
+      (p) => {
+        if (id !== this.juegoId || pais !== this.paisSvc.pais()) return; // cambió de juego o de país mientras cargaba
+        this.precios.set(p);
+        this.preciosEstado.set('listo');
+      },
+      () => { if (id === this.juegoId && pais === this.paisSvc.pais()) this.preciosEstado.set('error'); },
+    );
+  }
+
+  cambiarPais(codigo: CodigoPais) {
+    this.paisSvc.cambiar(codigo);
+    this.precios.set(null);
+    this.preciosEstado.set('cargando');
+    this.verTodasLasTiendas.set(false);
+    this.cargarPrecios(this.juegoId);
   }
 
   /** Ofertas de PC visibles: las más baratas, o todas si se pidió */
@@ -165,12 +187,8 @@ export class Juego implements OnInit, AfterViewInit, OnDestroy {
     return this.precios()?.pc.slice(this.TIENDAS_VISIBLES).find((o) => o.masBarata) ?? null;
   }
 
-  pesos(valor: number | null | undefined): string {
-    return valor == null ? '—' : `${valor.toLocaleString('es-CO')} COP`;
-  }
-
-  dolares(valor: number | null | undefined): string {
-    return valor == null ? '' : `US$${valor.toFixed(2)}`;
+  dinero(valor: number | null | undefined, moneda: string): string {
+    return PaisService.dinero(valor, moneda);
   }
 
   /** "hace 2 h", "hace 5 min", "ayer"… */
@@ -212,13 +230,25 @@ export class Juego implements OnInit, AfterViewInit, OnDestroy {
   seleccionarMedia(index: number): void {
     if (!this.juego?.galeria) return;
     this.indexActual.set(index);
+    this.videoSinSonido.set(false);
     this.mediaActual.set(this.juego.galeria[index]);
+    this.centrarMiniatura(index);
     if (!this.motion.reducido()) {
       requestAnimationFrame(() => {
         const media = document.querySelector('.media-principal > img, .media-principal > video');
         if (media) this.motion.gsap.fromTo(media, { opacity: 0, scale: 1.03 }, { opacity: 1, scale: 1, duration: 0.45, ease: 'expo.out' });
       });
     }
+  }
+
+  /** Mueve la tira para que la miniatura activa quede centrada (y nunca escondida) */
+  private centrarMiniatura(index: number): void {
+    const tira = this.tira?.nativeElement;
+    const mini = tira?.children[index] as HTMLElement | undefined;
+    if (!tira || !mini) return;
+    // scrollTo de la tira, no scrollIntoView: así la página no se mueve
+    const left = mini.offsetLeft - (tira.clientWidth - mini.offsetWidth) / 2;
+    tira.scrollTo({ left: Math.max(0, left), behavior: this.motion.reducido() ? 'auto' : 'smooth' });
   }
 
   get contadorMedia(): string {

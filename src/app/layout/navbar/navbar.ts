@@ -1,11 +1,17 @@
-import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, inject, OnDestroy, signal, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, computed, ElementRef, inject, OnDestroy, signal, ViewChild } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { Auth, onAuthStateChanged, User } from '@angular/fire/auth';
-import { filter } from 'rxjs';
+import { catchError, filter, of, Subscription, switchMap, timer } from 'rxjs';
 import type { gsap } from 'gsap';
 import { AuthService } from '../../core/services/auth';
+import { PandaScoreService } from '../../core/services/pandascore';
 import { MotionService } from '../../shared/utils/motion';
 import { Icono } from '../../shared/ui/icono';
+
+// Inactividad: como en el café, si te paras del cubículo un buen rato, el tendero libera el puesto.
+const INACTIVIDAD_MS = 30 * 60_000; // 30 minutos sin tocar nada cierran la sesión
+const AVISO_MS = 60_000; // el último minuto se avisa con una cuenta regresiva
+const CLAVE_ACTIVIDAD = 'nexos-actividad'; // compartida entre pestañas: actividad en una mantiene viva la sesión en todas
 
 // El mostrador del café: letrero, navegación y el cubículo de sesión con su temporizador.
 @Component({
@@ -25,6 +31,7 @@ export class Navbar implements AfterViewInit, OnDestroy {
   private motion = inject(MotionService);
   private cdr = inject(ChangeDetectorRef);
   private router = inject(Router);
+  private panda = inject(PandaScoreService);
 
   readonly enlaces = [
     { ruta: '/', texto: 'Inicio', exacto: true },
@@ -39,17 +46,43 @@ export class Navbar implements AfterViewInit, OnDestroy {
   menuAbierto = signal(false);
   entrando = signal(false);
   bajo = signal(false);
+  // Segundos que quedan antes de cerrar la sesión por inactividad (null: sin aviso)
+  avisoInactividad = signal<number | null>(null);
+  // Mensaje tras cerrarla, para que no sea un misterio
+  sesionCerrada = signal(false);
+
+  // Cartel del local: "abierto" de día y de noche, "abierto 24 h" de madrugada y "hay partido" con uno en vivo
+  hayPartido = signal(false);
+  private hora = signal(new Date().getHours());
+  textoCartel = computed(() => (this.hayPartido() ? 'hay partido' : this.hora() < 6 ? 'abierto 24 h' : 'abierto'));
 
   private reloj?: ReturnType<typeof setInterval>;
   private quitarAuth?: () => void;
   private observador?: ResizeObserver;
   private quitarScroll?: () => void;
+  private subCartel?: Subscription;
 
   constructor() {
+    // Cada 2 minutos: la hora y si hay algún partido en vivo (comparte la caché con el inicio y la cartelera)
+    this.subCartel = timer(0, 120_000).pipe(
+      switchMap(() => this.panda.partidos().pipe(catchError(() => of(null)))),
+    ).subscribe((r) => {
+      this.hora.set(new Date().getHours());
+      if (r) this.hayPartido.set(Object.values(r.partidos).some((lista) => lista.some((m: any) => m.status === 'running')));
+    });
     this.quitarAuth = onAuthStateChanged(this.auth, (u) => {
       this.usuario.set(u);
-      if (u) this.iniciarReloj();
-      else this.detenerReloj();
+      if (u) {
+        // Si la pestaña estuvo cerrada más tiempo que el límite, la sesión guardada ya venció
+        if (Date.now() - this.ultimaActividad() > INACTIVIDAD_MS) { this.cerrarPorInactividad(); return; }
+        this.iniciarReloj();
+        this.vigilarActividad();
+      } else {
+        this.detenerReloj();
+        this.dejarDeVigilar();
+        // Sin sesión no hay actividad que recordar: el próximo inicio de sesión cuenta desde cero
+        try { localStorage.removeItem(CLAVE_ACTIVIDAD); } catch { /* sin storage */ }
+      }
       this.cdr.markForCheck();
     });
     // Cierra el menú del celular al cambiar de página
@@ -73,6 +106,11 @@ export class Navbar implements AfterViewInit, OnDestroy {
         keyframes: [{ skewX: -18, duration: 0.25 }, { skewX: 10, duration: 0.3 }, { skewX: 0, duration: 0.3 }],
         ease: 'sine.inOut', stagger: 0.08,
       }, 0);
+  }
+
+  tocarCartel() {
+    this.balancearCartel();
+    if (this.hayPartido()) this.router.navigate(['/esports']);
   }
 
   // routerLinkActive avisa cuando cambia el enlace activo; se mide en el siguiente cuadro, ya con la clase puesta
@@ -115,7 +153,10 @@ export class Navbar implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.subCartel?.unsubscribe();
     this.detenerReloj();
+    this.dejarDeVigilar();
+    clearTimeout(this.avisoCerrada);
     this.quitarAuth?.();
     this.observador?.disconnect();
     this.quitarScroll?.();
@@ -144,8 +185,18 @@ export class Navbar implements AfterViewInit, OnDestroy {
   async sentarse() {
     if (this.entrando()) return;
     this.entrando.set(true);
+    this.sesionCerrada.set(false);
+    try { localStorage.removeItem(CLAVE_ACTIVIDAD); } catch { /* sin storage */ }
     try {
       await this.authService.loginWithGoogle();
+      // Al entrar, el local se enciende: la sala parpadea y los puestos que se ven se prenden uno a uno
+      if (this.auth.currentUser) {
+        const visibles = Array.from(document.querySelectorAll('.lampara, .cubiculo-sesion, .afiche, a.cubiculo, .juego-card'))
+          .filter((el) => { const r = el.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight && r.width > 0; })
+          .slice(0, 8);
+        this.motion.encenderLocal(visibles, true);
+        dispatchEvent(new Event('nexos:sesion')); // el tendero celebra que te sentaste
+      }
     } catch {
       // el error ya se registra en AuthService; el botón vuelve a estar disponible
     } finally {
@@ -154,8 +205,69 @@ export class Navbar implements AfterViewInit, OnDestroy {
   }
 
   async levantarse() {
+    this.dejarDeVigilar();
+    try { localStorage.removeItem(CLAVE_ACTIVIDAD); } catch { /* sin storage */ }
     await this.authService.logout();
     try { sessionStorage.removeItem('nexos-sesion-inicio'); } catch { /* sin storage */ }
+  }
+
+  // ---------- inactividad ----------
+  private quitarActividad?: () => void;
+  private ultimaEscritura = 0;
+  private avisoCerrada?: ReturnType<typeof setTimeout>;
+
+  /** Última actividad registrada en cualquier pestaña; sin registro (sesión recién abierta) cuenta como ahora */
+  private ultimaActividad(): number {
+    try {
+      const v = Number(localStorage.getItem(CLAVE_ACTIVIDAD));
+      if (v) return v;
+    } catch { /* sin storage: solo cuenta esta pestaña */ }
+    return this.ultimaEscritura || Date.now();
+  }
+
+  /** Anota que estás ahí (como mucho cada 10 s, para no escribir en cada movimiento del mouse) */
+  private registrarActividad = () => {
+    const ahora = Date.now();
+    if (this.avisoInactividad() !== null) this.avisoInactividad.set(null);
+    if (ahora - this.ultimaEscritura < 10_000) return;
+    this.ultimaEscritura = ahora;
+    try { localStorage.setItem(CLAVE_ACTIVIDAD, String(ahora)); } catch { /* sin storage */ }
+  };
+
+  private vigilarActividad() {
+    if (this.quitarActividad) return;
+    this.ultimaEscritura = 0;
+    this.registrarActividad();
+    const eventos = ['pointerdown', 'pointermove', 'keydown', 'scroll', 'wheel', 'touchstart'];
+    eventos.forEach((e) => addEventListener(e, this.registrarActividad, { passive: true }));
+    this.quitarActividad = () => eventos.forEach((e) => removeEventListener(e, this.registrarActividad));
+  }
+
+  private dejarDeVigilar() {
+    this.quitarActividad?.();
+    this.quitarActividad = undefined;
+    this.avisoInactividad.set(null);
+  }
+
+  /** Se llama cada segundo junto al reloj del cubículo */
+  private revisarInactividad() {
+    if (!this.quitarActividad) return;
+    const resta = INACTIVIDAD_MS - (Date.now() - this.ultimaActividad());
+    if (resta <= 0) { this.cerrarPorInactividad(); return; }
+    this.avisoInactividad.set(resta <= AVISO_MS ? Math.ceil(resta / 1000) : null);
+  }
+
+  /** Botón "Sigo aquí" del aviso */
+  seguirAqui() {
+    this.ultimaEscritura = 0;
+    this.registrarActividad();
+  }
+
+  private async cerrarPorInactividad() {
+    await this.levantarse();
+    this.sesionCerrada.set(true);
+    clearTimeout(this.avisoCerrada);
+    this.avisoCerrada = setTimeout(() => this.sesionCerrada.set(false), 8000);
   }
 
   alternarMenu() {
@@ -177,6 +289,7 @@ export class Navbar implements AfterViewInit, OnDestroy {
       const mm = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
       const ss = String(s % 60).padStart(2, '0');
       this.tiempo.set(`${hh}:${mm}:${ss}`);
+      this.revisarInactividad();
     };
     pintar();
     this.detenerReloj();

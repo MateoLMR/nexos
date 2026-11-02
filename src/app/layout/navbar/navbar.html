@@ -6,13 +6,18 @@
 
     <!-- Letrero -->
     <div class="flex items-center gap-2 sm:gap-3 shrink-0">
-      <a routerLink="/" class="flex items-center gap-1.5 sm:gap-2.5 rounded" aria-label="Nexos, ir al inicio">
-        <img src="Imagenes/Logo.png" alt="" class="h-7 w-7 sm:h-9 sm:w-9 object-contain" />
-        <span #letrero class="letrero text-[1.4rem] sm:text-[1.65rem] text-monitor">Nexos</span>
+      <!-- Marca: el ícono mide 0,9 veces el tamaño del nombre y lo separa un tercio de ese tamaño,
+           así el nombre manda y el ícono lo acompaña -->
+      <a routerLink="/" class="marca flex items-center rounded" aria-label="Nexos, ir al inicio">
+        <img src="Imagenes/logo.svg" alt="" width="24" height="24" class="marca-icono" />
+        <span #letrero class="letrero text-monitor">Nexos</span>
       </a>
       <!-- Cartel de local pegado con cinta -->
-      <span #cartel class="cartel" (mouseenter)="balancearCartel()" (click)="balancearCartel()">
-        <span class="cartel-tabla">abierto</span>
+      <!-- Cambia con la hora y cuando hay un partido en vivo; con partido, lleva a la cartelera -->
+      <span #cartel class="cartel" [class.cartel-vivo]="hayPartido()" (mouseenter)="balancearCartel()" (click)="tocarCartel()"
+            [attr.role]="hayPartido() ? 'link' : null" [attr.tabindex]="hayPartido() ? 0 : null" (keydown.enter)="tocarCartel()"
+            [attr.aria-label]="hayPartido() ? 'Hay un partido en vivo: ir a la cartelera de eSports' : null">
+        <span class="cartel-tabla">{{ textoCartel() }}</span>
         <span class="cartel-bandas" aria-hidden="true"><i></i><i></i></span>
       </span>
     </div>
@@ -50,7 +55,7 @@
       } @else {
         <button type="button" class="boton boton-principal !min-h-9 hidden sm:inline-flex" (click)="sentarse()" [disabled]="entrando()">
           <app-icono nombre="log-in" [tam]="18" />
-          {{ entrando() ? 'Entrando…' : 'Sentarse' }}
+          {{ entrando() ? 'Entrando…' : 'Iniciar sesión' }}
         </button>
       }
 
@@ -78,7 +83,7 @@
             </button>
           } @else {
             <button type="button" class="boton boton-principal w-full" (click)="sentarse()" [disabled]="entrando()">
-              <app-icono nombre="log-in" [tam]="18" /> {{ entrando() ? 'Entrando…' : 'Sentarse (iniciar sesión)' }}
+              <app-icono nombre="log-in" [tam]="18" /> {{ entrando() ? 'Entrando…' : 'Iniciar sesión' }}
             </button>
           }
         </li>
@@ -86,3 +91,23 @@
     </div>
   }
 </header>
+
+<!-- Aviso de inactividad: el último minuto antes de liberar el cubículo -->
+@if (avisoInactividad(); as segundos) {
+  <div class="aviso-inactividad" role="alertdialog" aria-labelledby="aviso-titulo" aria-describedby="aviso-texto">
+    <p id="aviso-titulo" class="aviso-titulo">¿Sigues en tu cubículo?</p>
+    <p id="aviso-texto" class="aviso-texto">
+      Por inactividad cerramos tu sesión en <span class="font-mono text-ambar tabular" aria-live="off">{{ segundos }} s</span>.
+    </p>
+    <div class="flex gap-2 mt-3">
+      <button type="button" class="boton boton-principal !min-h-9" (click)="seguirAqui()">Sigo aquí</button>
+      <button type="button" class="boton boton-linea !min-h-9" (click)="levantarse()">Cerrar sesión</button>
+    </div>
+  </div>
+}
+@if (sesionCerrada()) {
+  <div class="aviso-inactividad" role="status">
+    <p class="aviso-titulo">Liberamos tu cubículo</p>
+    <p class="aviso-texto">Cerramos tu sesión tras 30 minutos sin actividad. Vuelve a iniciarla cuando quieras.</p>
+  </div>
+}

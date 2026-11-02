@@ -9,7 +9,7 @@
       <app-icono nombre="arrow-left" [tam]="16" /> Juegos del local
     </a>
     <h1 class="letrero text-[clamp(2.75rem,7vw,6rem)] text-monitor mt-4 max-w-4xl">
-      {{ juego?.titulo ?? (cargando ? 'Cargando…' : 'Juego no encontrado') }}
+      {{ juego?.titulo ?? (cargando ? 'Prendiendo los equipos…' : 'Juego no encontrado') }}
     </h1>
     @if (juego; as j) {
       <ul class="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 text-monitor-2" role="list">
@@ -34,7 +34,13 @@
           <div class="media-principal cubiculo">
             @if (mediaActual(); as m) {
               @if (m.tipo === 'video') {
-                <video controls playsinline class="h-full w-full object-cover" [appVideo]="m.src" [poster]="m.thumb || ''"></video>
+                <video #reproductor="appVideo" controls playsinline class="h-full w-full object-cover" [appVideo]="m.src" [poster]="m.thumb || ''"
+                       [autoplay]="true" [volumen]="0.5" (sinSonido)="videoSinSonido.set($event)"></video>
+                @if (videoSinSonido()) {
+                  <button type="button" class="ficha ficha-sobre-foto boton-sonido" (click)="reproductor.activarSonido()">
+                    <app-icono nombre="volume" [tam]="16" /> Activar sonido
+                  </button>
+                }
               } @else {
                 <img [src]="m.src" [alt]="'Captura ' + (indexActual() + 1) + ' de ' + j.titulo" class="h-full w-full object-cover cursor-zoom-in"
                      (click)="abrirModal(m.src)" />
@@ -49,7 +55,7 @@
             <span class="ficha ficha-sobre-foto absolute bottom-3 right-3 tabular">{{ contadorMedia }}</span>
           </div>
 
-          <div class="miniaturas" role="list">
+          <div #tira class="miniaturas" role="list">
             @for (item of j.galeria; track $index; let i = $index) {
               <button type="button" role="listitem" class="miniatura" [class.miniatura-activa]="i === indexActual()"
                       (click)="seleccionarMedia(i)" [attr.aria-label]="'Ver ' + (item.tipo === 'video' ? 'video ' : 'imagen ') + (i + 1)"
@@ -120,9 +126,18 @@
     <aside class="lg:col-span-4">
       <div class="lg:sticky lg:top-24 space-y-6">
         <section appAfiche="4" class="afiche afiche-recto tablero" aria-labelledby="titulo-precios">
-          <header class="flex items-center justify-between px-5 pt-5">
+          <header class="flex items-center justify-between gap-3 px-5 pt-5">
             <h2 id="titulo-precios" class="letrero text-2xl text-ambar">Dónde comprarlo</h2>
-            <app-icono nombre="store" [tam]="20" class="text-ambar" />
+            <!-- País de los precios: cada tienda muestra lo que cobra allá -->
+            <label class="selector-pais">
+              <span class="sr-only">País de los precios</span>
+              <select [value]="paisSvc.pais()" (change)="cambiarPais($any($event.target).value)">
+                @for (p of paisSvc.paises; track p.codigo) {
+                  <option [value]="p.codigo">{{ p.nombre }}</option>
+                }
+              </select>
+              <app-icono nombre="chevron-down" [tam]="14" />
+            </label>
           </header>
           <div aria-live="polite">
             @if (preciosEstado() === 'cargando') {
@@ -130,16 +145,16 @@
                 @for (n of [1, 2, 3]; track n) { <div class="cargando-bloque h-12"></div> }
               </div>
             } @else if (hayPreciosEnVivo) {
-              <!-- PC: Steam y GOG con su precio para Colombia; las demás tiendas con su precio de EE. UU. -->
+              <!-- PC: cada tienda con lo que cobra en el país elegido, en su moneda -->
               <p class="px-5 pt-1 text-xs text-monitor-2 flex items-center gap-1.5">
-                <span class="punto-vivo"></span> PC · precios de hoy
+                <span class="punto-vivo"></span> PC · precios de hoy en {{ paisSvc.actual().nombre }}
               </p>
               <ul class="px-5 pb-2 pt-1" role="list">
                 @for (o of ofertasVisibles; track o.url; let i = $index) {
                   @if (!o.popular && (i === 0 || ofertasVisibles[i - 1].popular)) {
                     <li class="pt-3 pb-1 text-xs text-monitor-2">Otras tiendas</li>
                   }
-                  <li class="fila-tienda">
+                  <li class="fila-tienda" [attr.data-bit]="o.masBarata ? 'mejor-precio' : null">
                     <a [href]="o.url" target="_blank" rel="noopener" class="tienda" [class]="claseTienda(o.tienda)">
                       <span class="min-w-0">
                         <span class="flex items-center gap-1.5 text-monitor font-medium">
@@ -152,19 +167,11 @@
                       </span>
                       <span class="text-right whitespace-nowrap">
                         <span class="block font-mono text-lg tabular" [class.text-ambar]="o.masBarata" [class.text-monitor]="!o.masBarata">
-                          @if (!o.exacto) { <span class="text-monitor-2" title="Convertido con la tasa del día">≈ </span> }
-                          <span [appContador]="pesos(o.precioCop)" [contadorRetraso]="0.35 + i * 0.08">{{ pesos(o.precioCop) }}</span>
+                          <span [appContador]="dinero(o.precio, o.moneda)" [contadorRetraso]="0.35 + i * 0.08">{{ dinero(o.precio, o.moneda) }}</span>
                         </span>
-                        <span class="block text-xs text-monitor-2 tabular">
-                          @if (o.exacto) {
-                            @if (o.descuento > 0 && o.retailCop) { <s class="mr-1 opacity-70">{{ pesos(o.retailCop) }}</s> }
-                            precio en Colombia
-                          } @else {
-                            {{ dolares(o.precioUsd) }}
-                            @if (o.descuento > 0 && o.retailUsd) { <s class="ml-1 opacity-70">{{ dolares(o.retailUsd) }}</s> }
-                            · {{ o.region === 'CO' ? 'en Colombia' : 'en EE. UU.' }}
-                          }
-                        </span>
+                        @if (o.descuento > 0 && o.precioNormal) {
+                          <span class="block text-xs text-monitor-2 tabular">antes <s class="opacity-70">{{ dinero(o.precioNormal, o.moneda) }}</s></span>
+                        }
                       </span>
                       <span class="sr-only">(se abre en otra pestaña)</span>
                     </a>
@@ -179,7 +186,7 @@
                 </button>
                 @if (masBarataOculta; as o) {
                   <p class="mx-5 -mt-2 mb-3 text-xs text-monitor-2">
-                    La más barata está ahí: <span class="text-ambar">{{ o.tienda }}, {{ pesos(o.precioCop) }}</span>
+                    La más barata está ahí: <span class="text-ambar">{{ o.tienda }}, {{ dinero(o.precio, o.moneda) }}</span>
                   </p>
                 }
               }
@@ -187,31 +194,24 @@
                 @if (precios()!.minimoHistorico; as m) {
                   <div class="flex justify-between gap-3">
                     <dt class="text-monitor-2">Mínimo histórico</dt>
-                    <dd class="text-monitor tabular">{{ pesos(m.cop) }} <span class="text-monitor-2">· {{ mesYAnio(m.fecha) }}</span></dd>
+                    <dd class="text-monitor tabular">{{ dinero(m.precio, m.moneda) }}</dd>
                   </div>
                 }
                 <div class="flex justify-between gap-3">
                   <dt class="text-monitor-2">Actualizado</dt>
-                  <dd class="text-monitor">
-                    {{ haceCuanto(precios()!.actualizado) }}
-                    @if (precios()!.tasa; as t) { <span class="text-monitor-2">· 1 USD = {{ t.cop.toLocaleString('es-CO', { maximumFractionDigits: 0 }) }} COP</span> }
-                  </dd>
+                  <dd class="text-monitor">{{ haceCuanto(precios()!.actualizado) }}</dd>
                 </div>
                 @if (precios()!.desactualizado) {
                   <p class="text-alerta">No pudimos actualizar ahora; estos son los últimos precios guardados.</p>
                 }
               </dl>
-              <p class="mx-5 mb-3 text-xs text-monitor-2 leading-relaxed">
-                Steam y GOG muestran lo que cobran en Colombia. Las demás tiendas dan su precio de EE. UU.:
-                al pagar desde Colombia puede cambiar. <span class="text-monitor">≈</span> = convertido con la tasa del día.
-              </p>
             } @else if (preciosEstado() === 'error') {
               <p class="px-5 py-4 text-sm text-monitor-2">No pudimos traer los precios de hoy. Vuelve a intentarlo en un momento.</p>
             } @else {
-              <!-- Sin precio en vivo: el juego no está en las tiendas de PC que sigue CheapShark -->
+              <!-- Sin precio: ninguna tienda de PC que sigue IsThereAnyDeal lo vende en este país -->
               <div class="px-5 py-4">
                 <p class="text-monitor font-medium">No está a la venta en tiendas de PC</p>
-                <p class="mt-1 text-sm text-monitor-2">No encontramos este juego en ninguna tienda de PC que sigamos. Si vuelve a venderse, aparecerá aquí con su precio del día.</p>
+                <p class="mt-1 text-sm text-monitor-2">No lo encontramos en ninguna tienda de PC en {{ paisSvc.actual().nombre }}. Si empieza a venderse, aparecerá aquí con su precio del día.</p>
               </div>
             }
           </div>
@@ -222,7 +222,7 @@
             </p>
           }
           <p class="px-5 pb-4 pt-2 text-xs text-monitor-2">
-            Precios: <a href="https://www.cheapshark.com" target="_blank" rel="noopener" class="underline hover:text-monitor">CheapShark</a>
+            Precios: <a href="https://isthereanydeal.com" target="_blank" rel="noopener" class="underline hover:text-monitor">IsThereAnyDeal</a> y Steam
             · Plataformas: <a [href]="plataformas()?.rawg || 'https://rawg.io'" target="_blank" rel="noopener" class="underline hover:text-monitor">RAWG</a>
           </p>
         </section>

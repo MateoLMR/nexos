@@ -55,14 +55,34 @@
 .flecha-der { right: 0.75rem; }
 @media (hover: none) { .flecha { opacity: 1; } }
 
+/* Tira sin barra de desplazamiento: sigue sola a la imagen activa y los bordes
+   difuminados avisan que hay más miniaturas a los lados */
 .miniaturas {
   display: flex;
   gap: 0.6rem;
   margin-top: 0.75rem;
+  padding: 2px 1.5rem;
   overflow-x: auto;
-  padding-bottom: 0.4rem;
-  scrollbar-width: thin;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 1.5rem;
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, transparent, #000 1.5rem, #000 calc(100% - 1.5rem), transparent);
 }
+.miniaturas::-webkit-scrollbar { display: none; }
+.miniatura { scroll-snap-align: center; }
+
+/* Aviso para quitar el silencio cuando el navegador no dejó arrancar con sonido */
+.boton-sonido {
+  position: absolute;
+  left: 50%;
+  bottom: 4.5rem;
+  translate: -50% 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+}
+.boton-sonido:hover { color: var(--color-ambar); }
 .miniatura {
   position: relative;
   flex: 0 0 auto;
@@ -97,6 +117,29 @@
 
 /* ---------- tablero de precios ---------- */
 .tablero { background: var(--color-pared-2); border: 1px solid rgb(255 176 32 / 0.45); }
+
+/* Selector de país: una ficha pequeña en la esquina del tablero */
+.selector-pais {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-monitor-2);
+}
+.selector-pais select {
+  appearance: none;
+  max-width: 9.5rem;
+  padding: 0.3rem 1.6rem 0.3rem 0.6rem;
+  border: 1px solid var(--color-cubiculo-2);
+  border-radius: var(--radius-cubiculo);
+  background: var(--color-pared);
+  color: var(--color-monitor);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.selector-pais select:hover { border-color: var(--color-ambar); }
+.selector-pais select:focus-visible { outline: 2px solid var(--color-ambar); outline-offset: 2px; }
+.selector-pais app-icono { position: absolute; right: 0.5rem; pointer-events: none; }
 .tienda {
   display: flex;
   align-items: center;

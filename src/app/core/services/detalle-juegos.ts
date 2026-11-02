@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { rutaLocal } from '../../shared/utils/rutas';
+import { PaisService } from './pais';
 
 export interface Rating { label: string; valor: number; }
 /** Una tienda con su precio ya formateado ("125.800 COP"), como la muestran Inicio y Comparar */
@@ -25,30 +26,27 @@ export interface DetalleJuego {
   contras: string[];
 }
 
-// Precios de PC en vivo (CheapShark vía /api/precios)
+// Precios de PC en el país elegido (IsThereAnyDeal + Steam vía /api/precios).
+// Cada oferta trae la moneda en la que cobra esa tienda en ese país: no se convierte nada.
 export interface OfertaPc {
   tienda: string;
   popular: boolean;
   masBarata: boolean;
-  /** 'CO': lo que cobra la tienda en Colombia (Steam, GOG) · 'US': precio de EE. UU. (CheapShark) */
-  region: 'CO' | 'US';
-  /** El precio en pesos sale de la tienda (Steam); si no, se convirtió con la tasa del día */
-  exacto: boolean;
-  precioCop: number | null;
-  retailCop: number | null;
-  precioUsd: number | null;
-  retailUsd: number | null;
+  precio: number;
+  precioNormal: number | null;
+  moneda: string;
   descuento: number;
   url: string;
 }
 export interface PreciosJuego {
   juego: string;
+  pais: string;
+  moneda: string;
   enVivo: boolean;
   pc: OfertaPc[];
-  minimoHistorico: { usd: number; cop: number | null; fecha: string } | null;
+  minimoHistorico: { precio: number; moneda: string } | null;
   actualizado: string | null;
   desactualizado: boolean;
-  tasa: { cop: number; actualizado: string } | null;
 }
 export interface PrecioDeHoy { juego: string; masBarato: OfertaPc | null; actualizado: string | null; }
 
@@ -89,35 +87,29 @@ export class DetalleJuegosService {
     return this.cache.get(id)!;
   }
 
-  // Precios y plataformas se piden aparte del detalle para que la página no espere a CheapShark o RAWG
+  // Precios y plataformas se piden aparte del detalle para que la página no espere a las tiendas o a RAWG
   private cachePrecios = new Map<string, Promise<PreciosJuego>>();
   private cachePlataformas = new Map<string, Promise<PlataformasJuego>>();
-  private cacheHoy: Promise<PrecioDeHoy[]> | null = null;
+  private cacheHoy = new Map<string, Promise<PrecioDeHoy[]>>();
 
-  getPrecios(id: string): Promise<PreciosJuego> {
-    return this.pedirConCache(this.cachePrecios, id, `${this.api}/precios?juego=${encodeURIComponent(id)}`);
+  getPrecios(id: string, pais: string): Promise<PreciosJuego> {
+    return this.pedirConCache(this.cachePrecios, `${id}|${pais}`, `${this.api}/precios?juego=${encodeURIComponent(id)}&pais=${pais}`);
   }
 
   getPlataformas(id: string): Promise<PlataformasJuego> {
     return this.pedirConCache(this.cachePlataformas, id, `${this.api}/plataformas?juego=${encodeURIComponent(id)}`);
   }
 
-  // El más barato de hoy de cada juego con precio en vivo
-  getPreciosDeHoy(): Promise<PrecioDeHoy[]> {
-    if (!this.cacheHoy) {
-      this.cacheHoy = firstValueFrom(this.http.get<PrecioDeHoy[]>(`${this.api}/precios`)).catch((e) => {
-        this.cacheHoy = null;
-        throw e;
-      });
-    }
-    return this.cacheHoy;
+  // La oferta destacada de hoy de cada juego con precio, en el país elegido
+  getPreciosDeHoy(pais: string): Promise<PrecioDeHoy[]> {
+    return this.pedirConCache(this.cacheHoy, pais, `${this.api}/precios?pais=${pais}`);
   }
 
-  /** El más barato de hoy de un juego, con la misma forma que una tienda manual ("125.800 COP"); null si no tiene precio en vivo */
+  /** La oferta destacada de hoy de un juego, con el precio ya formateado ("199.000 COP"); null si no tiene precio */
   static tiendaDeHoy(hoy: PrecioDeHoy[], id: string): Tienda | null {
     const o = hoy.find((p) => p.juego === id)?.masBarato;
-    if (!o || o.precioCop == null) return null;
-    return { nombre: o.tienda, precio: `${o.precioCop.toLocaleString('es-CO')} COP`, url: o.url };
+    if (!o || o.precio == null) return null;
+    return { nombre: o.tienda, precio: PaisService.dinero(o.precio, o.moneda), url: o.url };
   }
 
   private pedirConCache<T>(cache: Map<string, Promise<T>>, id: string, url: string): Promise<T> {

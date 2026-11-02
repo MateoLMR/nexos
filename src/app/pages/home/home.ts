@@ -1,13 +1,14 @@
 import { AfterViewInit, ChangeDetectorRef, Component, computed, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { NgTemplateOutlet } from '@angular/common';
-import { forkJoin, of, catchError, map } from 'rxjs';
+import { of, catchError, Subscription, switchMap, timer } from 'rxjs';
 import { gsap } from 'gsap';
 import { TextPlugin } from 'gsap/TextPlugin';
 import { JuegosService, Juego, RecienLlegado } from '../../core/services/juegos';
 import { DetalleJuegosService } from '../../core/services/detalle-juegos';
+import { PaisService } from '../../core/services/pais';
 import { ForumService, Post } from '../../core/services/forum';
-import { PandaScoreService } from '../../core/services/pandascore';
+import { ClaveEsport, PandaScoreService } from '../../core/services/pandascore';
 import { MotionService } from '../../shared/utils/motion';
 import { Icono } from '../../shared/ui/icono';
 import { AficheDirective } from '../../shared/directives/afiche.directive';
@@ -28,13 +29,16 @@ const FILAS_TABLERO = 4;
 interface FilaPrecio { id: string; titulo: string; tienda: string; precio: string; descuento: number; }
 interface Partido { liga: string; a: string; b: string; enVivo: boolean; hora: string; juego: string; }
 
-// Torneos grandes del año (contenido existente); el estado se calcula con la fecha de hoy
-const TORNEOS = [
-  { titulo: 'Valorant Champions', lugar: 'Shanghái', fechas: '24 sep – 18 oct 2026', desde: '2026-09-24', hasta: '2026-10-18', imagen: 'Imagenes/valocup.png', url: 'https://valorantesports.com/es-MX/news/first-look-at-valorant-champions-tour-2026-' },
-  { titulo: 'LoL Worlds 2026', lugar: 'Estados Unidos', fechas: 'Octubre – noviembre 2026', desde: '2026-10-01', hasta: '2026-11-30', imagen: 'Imagenes/lolworldcup.png', url: 'https://lolesports.com/es-MX/' },
-  { titulo: 'CS2 · IEM Cologne', lugar: 'Alemania', fechas: '2 – 21 jun 2026', desde: '2026-06-02', hasta: '2026-06-21', imagen: 'Imagenes/cs2cup.png', url: 'https://esportsworldcup.com/en/competitions/2026/cs2' },
-  { titulo: 'Dota 2 · World Cup', lugar: 'Riad', fechas: '7 – 18 jul 2026', desde: '2026-07-07', hasta: '2026-07-18', imagen: 'Imagenes/dota2cup.png', url: 'https://esportsworldcup.com/en/competitions/2026/dota2' },
-];
+// Cartelera de torneos: los afiches son el arte de cada juego; los torneos llegan de PandaScore
+const AFICHE_JUEGO: Record<ClaveEsport, { imagen: string; ruta: string }> = {
+  valorant: { imagen: 'Imagenes/valocup.png', ruta: '/esports/valorant' },
+  lol: { imagen: 'Imagenes/lolworldcup.png', ruta: '/esports/league' },
+  cs2: { imagen: 'Imagenes/cs2cup.png', ruta: '/esports/counter' },
+  dota2: { imagen: 'Imagenes/dota2cup.png', ruta: '/esports/dota' },
+};
+const AFICHES_TORNEO = 4;
+
+interface AficheTorneo { id: string; titulo: string; juego: string; fechas: string; estado: string; imagen: string; logo: string | null; ruta: string; }
 
 const LOGOS = [
   ['Overwatch', 'Overwatch.png'], ['Warcraft', 'Warcraft.png'], ["Assassin's Creed", 'Assasin.png'],
@@ -54,13 +58,14 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
 
   private juegosSvc = inject(JuegosService);
   private detalleSvc = inject(DetalleJuegosService);
+  private paisSvc = inject(PaisService);
   private foroSvc = inject(ForumService);
   private panda = inject(PandaScoreService);
   private motion = inject(MotionService);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
 
-  readonly torneos = TORNEOS.map((t) => ({ ...t, estado: this.estadoTorneo(t.desde, t.hasta) }));
+  torneos = signal<AficheTorneo[] | null>(null); // null = cargando
   readonly logos = LOGOS;
 
   // Lanzamientos populares del último mes (RAWG, se renuevan cada día); null = cargando
@@ -84,13 +89,41 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
   totalDudas = signal(0);
 
   private tlEscritura?: gsap.core.Timeline;
+  private subPartido?: Subscription;
 
   async ngOnInit() {
     this.juegosSvc.getJuegos().then((j) => this.juegos.set(j)).catch(() => this.juegos.set([]));
     this.cargarPrecios();
     this.cargarPartido();
+    this.cargarTorneos();
     this.cargarDudas();
     this.cargarRecienLlegados();
+  }
+
+  private cargarTorneos() {
+    this.panda.torneos().subscribe({
+      next: (lista) => {
+        const fecha = (s: string) => new Date(s).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+        const estados = { en_curso: 'En curso', proximo: 'Próximo', terminado: 'Terminado' };
+        this.torneos.set(lista.slice(0, AFICHES_TORNEO).map((t) => ({
+          id: t.id,
+          titulo: t.titulo,
+          juego: t.nombreJuego,
+          fechas: t.hasta && t.hasta.slice(0, 10) !== t.desde.slice(0, 10) ? `${fecha(t.desde)} – ${fecha(t.hasta)}` : fecha(t.desde),
+          estado: estados[t.estado],
+          imagen: AFICHE_JUEGO[t.juego].imagen,
+          logo: t.imagen,
+          ruta: AFICHE_JUEGO[t.juego].ruta,
+        })));
+        // Los afiches llegan después del primer pintado: se animan cuando ya están en el DOM
+        requestAnimationFrame(() => {
+          this.raiz?.nativeElement.querySelectorAll('.torneo').forEach((el, i) =>
+            this.motion.alScroll(el, { y: -50, rotate: i % 2 ? 6 : -6, opacity: 0, ease: 'back.out(1.4)', duration: 0.9 }));
+          this.motion.refrescarScroll();
+        });
+      },
+      error: () => this.torneos.set([]),
+    });
   }
 
   private async cargarRecienLlegados() {
@@ -123,12 +156,18 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
         duration: 0.9, ease: 'back.out(1.6)', stagger: 0.14, delay: 0.35, clearProps: 'opacity,y,scale',
       });
     }
+    // Primera visita de la sesión: la lámpara y los afiches de la pared se prenden uno a uno
+    this.motion.encenderLocal([
+      ...Array.from(document.querySelectorAll('.lampara')),
+      ...Array.from(r.querySelectorAll('.pared .afiche')),
+    ]);
     this.iniciarEscritura();
     this.iniciarScroll();
     this.iniciarLanyards();
   }
 
   ngOnDestroy() {
+    this.subPartido?.unsubscribe();
     this.tlEscritura?.kill();
     this.motion.limpiarScroll();
   }
@@ -172,11 +211,11 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
   // ---------- datos de la pared ----------
   private async cargarPrecios() {
     try {
-      const [juegos, hoy] = await Promise.all([this.juegosSvc.getJuegos(), this.detalleSvc.getPreciosDeHoy()]);
+      const [juegos, hoy] = await Promise.all([this.juegosSvc.getJuegos(), this.detalleSvc.getPreciosDeHoy(this.paisSvc.pais())]);
       // Los juegos con mayor descuento hoy (tienda popular más barata de cada uno)
       const filas = hoy
-        .filter((p) => p.masBarato?.precioCop != null)
-        .sort((a, b) => (b.masBarato!.descuento - a.masBarato!.descuento) || (a.masBarato!.precioCop! - b.masBarato!.precioCop!))
+        .filter((p) => p.masBarato?.precio != null)
+        .sort((a, b) => b.masBarato!.descuento - a.masBarato!.descuento)
         .slice(0, FILAS_TABLERO)
         .map((p) => {
           const t = DetalleJuegosService.tiendaDeHoy(hoy, p.juego)!;
@@ -190,16 +229,15 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private cargarPartido() {
-    const nombres: Record<string, string> = { valorant: 'Valorant', cs2: 'CS2', lol: 'League of Legends', dota2: 'Dota 2' };
-    const pedir = (obs: ReturnType<PandaScoreService['getValorantMatches']>, juego: string) =>
-      obs.pipe(map((ms) => (ms ?? []).map((m: any) => ({ m, juego }))), catchError(() => of([])));
-    forkJoin([
-      pedir(this.panda.getValorantMatches(), nombres['valorant']),
-      pedir(this.panda.getCS2Matches(), nombres['cs2']),
-      pedir(this.panda.getLolMatches(), nombres['lol']),
-      pedir(this.panda.getDota2Matches(), nombres['dota2']),
-    ]).subscribe((listas) => {
-      const todos = listas.flat().filter(({ m }) => m?.opponents?.length === 2);
+    const nombres: Record<ClaveEsport, string> = { valorant: 'Valorant', cs2: 'CS2', lol: 'League of Legends', dota2: 'Dota 2' };
+    // Al entrar y cada minuto; si falla se reintenta al siguiente minuto sin borrar lo que ya se ve
+    this.subPartido = timer(0, 60_000).pipe(
+      switchMap((n) => this.panda.partidos(n > 0).pipe(catchError(() => of(null)))),
+    ).subscribe((r) => {
+      if (!r) { if (this.partido() === undefined) this.partido.set(null); return; }
+      const todos = (Object.keys(nombres) as ClaveEsport[])
+        .flatMap((k) => (r.partidos[k] ?? []).map((m: any) => ({ m, juego: nombres[k] })))
+        .filter(({ m }) => m?.opponents?.length === 2);
       const elegido = todos.find(({ m }) => m.status === 'running')
         ?? todos.sort((x, y) => new Date(x.m.begin_at).getTime() - new Date(y.m.begin_at).getTime())[0];
       if (!elegido) { this.partido.set(null); return; }
@@ -224,13 +262,6 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
     } catch {
       this.dudas.set([]);
     }
-  }
-
-  private estadoTorneo(desde: string, hasta: string): 'En curso' | 'Próximo' | 'Terminado' {
-    const hoy = new Date();
-    if (hoy < new Date(desde)) return 'Próximo';
-    if (hoy > new Date(`${hasta}T23:59:59`)) return 'Terminado';
-    return 'En curso';
   }
 
   // ---------- animaciones ----------
@@ -260,11 +291,7 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
 
   private iniciarScroll() {
     const r = this.raiz.nativeElement;
-    // Cada sección entra distinto: los torneos caen como afiches y los títulos se destapan.
-    // (Los recién llegados se animan en cargarRecienLlegados, cuando llegan sus datos)
-    r.querySelectorAll('.torneo').forEach((el, i) =>
-      this.motion.alScroll(el, { y: -50, rotate: i % 2 ? 6 : -6, opacity: 0, ease: 'back.out(1.4)', duration: 0.9 })
-    );
+    // Los títulos se destapan al bajar. (Los recién llegados y los torneos se animan cuando llegan sus datos)
     const titulos = r.querySelectorAll('.titulo-seccion');
     titulos.forEach((el) => this.motion.alScroll(el, { y: 30, opacity: 0, clipPath: 'inset(0 0 100% 0)' }));
   }

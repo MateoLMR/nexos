@@ -11,6 +11,8 @@ export interface Juego {
   descripcion: string;
   imagen: string;
   tipo: string;
+  /** Cuándo se agregó al local (para "Recién agregado") */
+  creado_en?: string;
 }
 
 // Lanzamiento popular del último mes (RAWG, lo renueva el cron diario). juego_id: si ya está en Nexos.

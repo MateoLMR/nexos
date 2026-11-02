@@ -141,12 +141,7 @@ export class Valorant implements OnInit, OnDestroy {
             }),
             timestamp: new Date(m.begin_at).getTime(),
             // Usamos el servicio para obtener el link correcto
-            streamUrl: this.pandaService.getStreamByLeague(
-              leagueName,
-              m.live_url,
-              m.serie?.name,
-              m.tournament?.name
-            ),
+            streamUrl: this.pandaService.canalDe(m, 'valorant'),
             league: leagueName
           };
         })
