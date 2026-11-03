@@ -104,10 +104,11 @@
 }
 
 /* ---------- marca: ícono + nombre ---------- */
-/* Todo sale del tamaño del nombre (--marca): ícono a 0,9 y separación de un tercio */
-.marca { --marca: 1.4rem; gap: calc(var(--marca) * 0.33); }
+/* Todo sale del tamaño del nombre (--marca). El logo, sin cuadro, se nivela con el nombre:
+   se apoya en la misma línea base y mide lo que la mayúscula de Bricolage Grotesque (0,66 del tamaño) */
+.marca { --marca: 1.4rem; gap: calc(var(--marca) * 0.28); align-items: baseline; }
 .marca .letrero { font-size: var(--marca); line-height: 1; }
-.marca-icono { width: calc(var(--marca) * 0.9); height: calc(var(--marca) * 0.9); flex: none; }
+.marca-icono { height: calc(var(--marca) * 0.66); width: auto; aspect-ratio: 3630 / 3016; flex: none; }
 @media (min-width: 640px) { .marca { --marca: 1.65rem; } }
 
 /* ---------- cartel "abierto" pegado con cinta ---------- */
