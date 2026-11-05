@@ -8,16 +8,17 @@ describe('App', () => {
     }).compileComponents();
   });
 
-  it('should create the app', () => {
+  it('se crea', () => {
     const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
+    expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('should render title', async () => {
+  it('pinta la barra, la página y el pie', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, nexos');
+    const html = fixture.nativeElement as HTMLElement;
+    expect(html.querySelector('app-navbar')).toBeTruthy();
+    expect(html.querySelector('router-outlet')).toBeTruthy();
+    expect(html.querySelector('app-footer')).toBeTruthy();
   });
 });

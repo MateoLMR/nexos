@@ -13,6 +13,11 @@ const INACTIVIDAD_MS = 30 * 60_000; // 30 minutos sin tocar nada cierran la sesi
 const AVISO_MS = 60_000; // el último minuto se avisa con una cuenta regresiva
 const CLAVE_ACTIVIDAD = 'nexos-actividad'; // compartida entre pestañas: actividad en una mantiene viva la sesión en todas
 
+/** Páginas que solo tienen sentido con sesión: al cerrarla, se vuelve al inicio */
+export function esPaginaPrivada(url: string): boolean {
+  return /^\/(perfil|admin)(\/|$|\?|#)/.test(url.split('#')[0] || '/');
+}
+
 // El mostrador del café: letrero, navegación y el cubículo de sesión con su temporizador.
 @Component({
   selector: 'app-navbar',
@@ -71,7 +76,10 @@ export class Navbar implements AfterViewInit, OnDestroy {
       if (r) this.hayPartido.set(Object.values(r.partidos).some((lista) => lista.some((m: any) => m.status === 'running')));
     });
     this.quitarAuth = onAuthStateChanged(this.auth, (u) => {
+      const salio = !!this.usuario() && !u;
       this.usuario.set(u);
+      // Al cerrar sesión (con cualquier botón o por inactividad) no te quedas en un cubículo que ya no es tuyo
+      if (salio && esPaginaPrivada(this.router.url)) this.router.navigateByUrl('/');
       if (u) {
         // Si la pestaña estuvo cerrada más tiempo que el límite, la sesión guardada ya venció
         if (Date.now() - this.ultimaActividad() > INACTIVIDAD_MS) { this.cerrarPorInactividad(); return; }
@@ -134,6 +142,8 @@ export class Navbar implements AfterViewInit, OnDestroy {
       this.observador.observe(this.riel.nativeElement);
     }
     document.fonts?.ready.then(() => this.moverLampara(false));
+    // Para las pruebas de rendimiento: repetir la animación de entrada sin pasar por Google
+    try { if (localStorage.getItem('bit-depurar')) (window as any).__nexosEntrar = () => this.encenderAlEntrar(); } catch { /* sin storage */ }
     requestAnimationFrame(() => this.moverLampara(false));
 
     // Al bajar, el header deja ver un desvanecido en vez de una línea
@@ -157,6 +167,7 @@ export class Navbar implements AfterViewInit, OnDestroy {
     this.detenerReloj();
     this.dejarDeVigilar();
     clearTimeout(this.avisoCerrada);
+    clearTimeout(this.celebracion);
     this.quitarAuth?.();
     this.observador?.disconnect();
     this.quitarScroll?.();
@@ -189,20 +200,25 @@ export class Navbar implements AfterViewInit, OnDestroy {
     try { localStorage.removeItem(CLAVE_ACTIVIDAD); } catch { /* sin storage */ }
     try {
       await this.authService.loginWithGoogle();
-      // Al entrar, el local se enciende: la sala parpadea y los puestos que se ven se prenden uno a uno
-      if (this.auth.currentUser) {
-        const visibles = Array.from(document.querySelectorAll('.lampara, .cubiculo-sesion, .afiche, a.cubiculo, .juego-card'))
-          .filter((el) => { const r = el.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight && r.width > 0; })
-          .slice(0, 8);
-        this.motion.encenderLocal(visibles, true);
-        dispatchEvent(new Event('nexos:sesion')); // el tendero celebra que te sentaste
-      }
+      if (this.auth.currentUser) this.encenderAlEntrar();
     } catch {
       // el error ya se registra en AuthService; el botón vuelve a estar disponible
     } finally {
       this.entrando.set(false);
     }
   }
+
+  /** Al entrar, el local se enciende: la sala parpadea y los puestos que se ven se prenden uno a uno */
+  private encenderAlEntrar() {
+    const visibles = Array.from(document.querySelectorAll('.lampara, .cubiculo-sesion, .afiche, a.cubiculo, .juego-card'))
+      .filter((el) => { const r = el.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight && r.width > 0; })
+      .slice(0, 8);
+    this.motion.encenderLocal(visibles, true);
+    // El tendero celebra que te sentaste cuando ya se prendieron las luces, no encima del parpadeo
+    clearTimeout(this.celebracion);
+    this.celebracion = setTimeout(() => dispatchEvent(new Event('nexos:sesion')), this.motion.reducido() ? 0 : 1000);
+  }
+  private celebracion?: ReturnType<typeof setTimeout>;
 
   async levantarse() {
     this.dejarDeVigilar();

@@ -110,6 +110,8 @@
 .marca .letrero { font-size: var(--marca); line-height: 1; }
 .marca-icono { height: calc(var(--marca) * 0.66); width: auto; aspect-ratio: 3630 / 3016; flex: none; }
 @media (min-width: 640px) { .marca { --marca: 1.65rem; } }
+/* En pantallas táctiles el enlace al inicio es fácil de tocar (44 px), sin mover el logo */
+@media (pointer: coarse) { .marca { min-height: 2.75rem; padding-block: 0.6rem; } }
 
 /* ---------- cartel "abierto" pegado con cinta ---------- */
 .cartel {
@@ -193,7 +195,7 @@
 /* Aviso de inactividad: una nota del tendero abajo a la derecha */
 .aviso-inactividad {
   position: fixed; right: 16px; bottom: 16px; z-index: 60;
-  width: min(360px, calc(100vw - 32px));
+  width: min(360px, calc(100% - 32px));
   padding: 16px 18px;
   background: var(--color-pared-2);
   border: 1px solid var(--color-ambar);

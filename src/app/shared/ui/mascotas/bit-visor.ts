@@ -11,13 +11,19 @@ export interface DatosVisor {
 
 const CIAN = '#7ef2ff';
 const CORAZON = ['.11.11.', '1111111', '1111111', '.11111.', '..111..', '...1...'];
-// Los modos animados se redibujan cada cuadro; los demás solo cuando cambian
+// Los modos animados cambian con el tiempo; todos sus parpadeos caen en pasos de 1/20 s
 const ANIMADOS = new Set<ModoVisor>(['vivo', 'dormido', 'escribe', 'limpia', 'reloj']);
+
+/** Lo que define el dibujo: si no cambia, no se redibuja ni se sube la textura otra vez */
+export function claveVisor(modo: ModoVisor, t: number, d: DatosVisor): string {
+  const paso = ANIMADOS.has(modo) ? Math.floor(t * 20) : 0;
+  return `${modo}|${paso}|${d.mx ?? 0}|${d.my ?? 0}|${d.cerrado ? 1 : 0}|${d.goles ?? ''}|${d.color ?? ''}|${d.descuento ?? ''}`;
+}
 
 /** Pantalla de píxeles 48×24 del visor de Bit. Devuelve true si redibujó. */
 export function dibujarVisor(px: CanvasRenderingContext2D, modo: ModoVisor, t: number, d: DatosVisor, anterior: { clave: string }): boolean {
-  const clave = modo + JSON.stringify(d);
-  if (!ANIMADOS.has(modo) && clave === anterior.clave) return false;
+  const clave = claveVisor(modo, t, d);
+  if (clave === anterior.clave) return false;
   anterior.clave = clave;
   px.fillStyle = '#0d0b16';
   px.fillRect(0, 0, 48, 24);

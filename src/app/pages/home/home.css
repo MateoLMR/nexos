@@ -64,11 +64,15 @@
 @keyframes cursor { 50% { opacity: 0; } }
 
 /* ---------- pared de afiches ---------- */
+/* En celular, una columna; desde 640 px, el partido y las dudas lado a lado (minmax: un nombre largo no estira la columna) */
 .pared {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.75rem 1.25rem;
   perspective: 1200px;
+}
+@media (min-width: 640px) {
+  .pared { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
 .tablero {
   grid-column: 1 / -1;
@@ -76,7 +80,10 @@
   border: 1px solid rgb(255 176 32 / 0.45);
   --giro: -1.2deg;
 }
-.partido { background: var(--color-cubiculo); border: 1px solid var(--color-cubiculo-2); }
+.partido { background: var(--color-cubiculo); border: 1px solid var(--color-cubiculo-2); container-type: inline-size; }
+/* Los nombres de los equipos se achican con el ancho del afiche: un nombre largo cabe entero sin partirse.
+   Si aun así no cabe (nombres muy largos), se corta la palabra antes que salirse del afiche */
+.equipos { font-size: clamp(1.1rem, 10.5cqi, 1.9rem); overflow-wrap: anywhere; }
 .dudas { background: var(--color-nexos); --giro: -0.6deg; }
 .dudas .text-monitor-2 { color: #e2d8ff; }
 .afiche a { color: inherit; text-decoration: none; }

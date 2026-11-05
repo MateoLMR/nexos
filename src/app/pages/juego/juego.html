@@ -179,7 +179,7 @@
                 }
               </ul>
               @if (ofertasOcultas) {
-                <button type="button" class="mx-5 mb-3 inline-flex items-center gap-1.5 text-sm font-medium text-monitor-2 hover:text-monitor"
+                <button type="button" class="mx-5 mb-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-monitor-2 hover:text-monitor"
                         (click)="verTodasLasTiendas.set(!verTodasLasTiendas())" [attr.aria-expanded]="verTodasLasTiendas()">
                   <app-icono [nombre]="verTodasLasTiendas() ? 'chevron-up' : 'chevron-down'" [tam]="16" />
                   {{ verTodasLasTiendas() ? 'Ver menos tiendas' : 'Ver las otras ' + ofertasOcultas + ' tiendas' }}

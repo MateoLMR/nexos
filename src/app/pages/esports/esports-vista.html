@@ -102,7 +102,7 @@
           <app-icono nombre="arrow-left" [tam]="18" />
         </button>
         <div class="flex-1 min-w-0">
-          <h3 class="letrero text-3xl text-monitor">{{ hitos()[hitoActual()].title }}
+          <h3 class="letrero text-2xl sm:text-3xl text-monitor break-words [hyphens:auto]" lang="es">{{ hitos()[hitoActual()].title }}
             <span class="font-mono text-xl text-monitor-2 tabular ml-1">{{ hitos()[hitoActual()].year }}</span></h3>
           <p class="mt-3 text-monitor/90 max-w-[65ch] min-h-[4.8em]" aria-live="polite">{{ textoHito() }}<span class="cursor" aria-hidden="true"></span></p>
         </div>

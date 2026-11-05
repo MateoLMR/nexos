@@ -22,7 +22,8 @@
     </div>
 
     <!-- Navegación de escritorio: cada enlace cuelga del cable y la lámpara alumbra el de la página actual -->
-    <div #riel class="riel hidden md:block ml-auto">
+    <!-- Desde 1024 px: en tablets los cinco enlaces, el cartel y el cubículo no caben en una fila, y ahí manda el menú -->
+    <div #riel class="riel hidden lg:block ml-auto">
       <span #lampara class="lampara sin-transicion" aria-hidden="true"></span>
       <ul class="flex h-full items-stretch" role="list">
         @for (e of enlaces; track e.ruta) {
@@ -35,7 +36,7 @@
     </div>
 
     <!-- Cubículo de sesión -->
-    <div class="ml-auto md:ml-2 flex items-center gap-2">
+    <div class="ml-auto lg:ml-2 flex items-center gap-2">
       @if (usuario(); as u) {
         <a routerLink="/perfil" class="cubiculo-sesion" aria-label="Tu perfil">
           @if (u.photoURL) {
@@ -48,7 +49,7 @@
             <span class="font-mono text-xs sm:text-sm text-vivo tabular" aria-label="Tiempo de sesión">{{ tiempo() }}</span>
           </span>
         </a>
-        <button type="button" class="boton boton-linea !min-h-9 !px-2.5 hidden md:inline-flex" (click)="levantarse()" aria-label="Cerrar sesión">
+        <button type="button" class="boton boton-linea !min-h-9 !px-2.5 hidden lg:inline-flex" (click)="levantarse()" aria-label="Cerrar sesión">
           <app-icono nombre="log-out" [tam]="18" />
         </button>
       } @else {
@@ -59,7 +60,7 @@
       }
 
       <!-- Menú del celular -->
-      <button type="button" class="boton boton-linea !min-h-9 !px-2.5 md:hidden" (click)="alternarMenu()"
+      <button type="button" class="boton boton-linea !min-h-11 !min-w-11 !px-2.5 lg:hidden" (click)="alternarMenu()"
               [attr.aria-expanded]="menuAbierto()" aria-controls="menu-movil" [attr.aria-label]="menuAbierto() ? 'Cerrar menú' : 'Abrir menú'">
         <app-icono [nombre]="menuAbierto() ? 'x' : 'list'" [tam]="20" />
       </button>
@@ -67,7 +68,7 @@
   </nav>
 
   @if (menuAbierto()) {
-    <div id="menu-movil" class="menu-movil md:hidden border-y border-cubiculo-2 bg-pared-2">
+    <div id="menu-movil" class="menu-movil lg:hidden border-y border-cubiculo-2 bg-pared-2">
       <ul class="local py-3 flex flex-col" role="list">
         @for (e of enlaces; track e.ruta) {
           <li>

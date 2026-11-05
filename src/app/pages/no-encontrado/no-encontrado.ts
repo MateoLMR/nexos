@@ -49,6 +49,8 @@ import { Icono } from '../../shared/ui/icono';
       translate: -50% -50%;
       rotate: -5deg;
       padding: 0.9rem 1.2rem;
+      width: max-content;
+      max-width: 90%;
       background: #f3ecd8;
       color: #2b2318;
       font-family: var(--font-letrero);

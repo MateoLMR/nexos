@@ -28,6 +28,9 @@
 
 /* ---------- base y superficies del navegador ---------- */
 html {
+  /* Los afiches van levemente girados: sus esquinas no deben abrir scroll de lado en celular.
+     "clip" (no "hidden") para que la barra pegada arriba siga funcionando */
+  overflow-x: clip;
   scroll-behavior: smooth;
   background: var(--color-pared);
   color-scheme: dark;
@@ -119,6 +122,10 @@ input::placeholder, textarea::placeholder { color: #8f97b3; }
   }
   .afiche-der { --giro: 1.4deg; }
   .afiche-recto { --giro: 0deg; }
+  /* En celular el afiche ocupa todo el ancho: con menos giro sus esquinas no se salen de la pantalla */
+  @media (max-width: 639px) {
+    .afiche { transform: rotate(calc(var(--giro) * 0.35)); }
+  }
 
   /* Letrero de luz: texto que "se enciende" */
   .letrero {

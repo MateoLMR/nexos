@@ -54,24 +54,31 @@ export class MotionService {
     if (this.reducido() || (yaAbierto && !forzar)) return;
     try { sessionStorage.setItem('nexos-local', '1'); } catch { /* sin storage: igual se anima */ }
 
-    // La sala a oscuras: un velo del color de la pared que parpadea hasta desaparecer
+    // Solo se anima la opacidad con la Web Animations API: corre en el compositor, así que el parpadeo
+    // sigue fluido aunque el hilo principal esté ocupado justo al entrar (perfil, Bit, la página).
+    // La sala a oscuras: un velo del color de la pared que parpadea hasta desaparecer (~1,1 s)
     const velo = document.createElement('div');
     velo.setAttribute('aria-hidden', 'true');
-    velo.style.cssText = 'position:fixed;inset:0;z-index:60;pointer-events:none;background:#0b0a10;opacity:0.92';
+    velo.style.cssText = 'position:fixed;inset:0;z-index:60;pointer-events:none;background:#0b0a10;opacity:0;will-change:opacity';
     document.body.appendChild(velo);
-    gsap.timeline({ onComplete: () => velo.remove() })
-      .to(velo, { opacity: 0.35, duration: 0.05, delay: 0.25 })
-      .to(velo, { opacity: 0.85, duration: 0.05, delay: 0.07 })
-      .to(velo, { opacity: 0.2, duration: 0.05, delay: 0.1 })
-      .to(velo, { opacity: 0.6, duration: 0.04, delay: 0.05 })
-      .to(velo, { opacity: 0, duration: 0.35, ease: 'power2.out', delay: 0.08 });
+    if (typeof velo.animate !== 'function') { velo.remove(); return; }
+    const total = 1.09;
+    const k = (s: number) => s / total;
+    velo.animate([
+      { opacity: 0.92, offset: 0 }, { opacity: 0.92, offset: k(0.25) },
+      { opacity: 0.35, offset: k(0.3) }, { opacity: 0.35, offset: k(0.37) },
+      { opacity: 0.85, offset: k(0.42) }, { opacity: 0.85, offset: k(0.52) },
+      { opacity: 0.2, offset: k(0.57) }, { opacity: 0.2, offset: k(0.62) },
+      { opacity: 0.6, offset: k(0.66) }, { opacity: 0.6, offset: k(0.74) },
+      { opacity: 0, offset: 1, easing: 'ease-out' },
+    ], { duration: total * 1000, easing: 'linear' }).finished.finally(() => velo.remove());
 
+    // Después, los puestos que se ven se prenden uno a uno con el titileo de un tubo
     lista.forEach((el, i) => {
-      gsap.timeline({ delay: 0.75 + i * 0.12 })
-        .set(el, { filter: 'brightness(0.2)' })
-        .to(el, { filter: 'brightness(1)', duration: 0.04 })
-        .to(el, { filter: 'brightness(0.35)', duration: 0.04, delay: 0.06 })
-        .to(el, { filter: 'brightness(1)', duration: 0.18, ease: 'power2.out', delay: 0.05, clearProps: 'filter' });
+      (el as HTMLElement).animate?.([
+        { opacity: 0.2, offset: 0 }, { opacity: 1, offset: 0.11 }, { opacity: 1, offset: 0.27 },
+        { opacity: 0.35, offset: 0.38 }, { opacity: 0.35, offset: 0.51 }, { opacity: 1, offset: 1, easing: 'ease-out' },
+      ], { duration: 370, delay: 750 + i * 120, easing: 'linear' });
     });
   }
 

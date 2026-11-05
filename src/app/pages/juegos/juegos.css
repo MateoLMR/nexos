@@ -45,8 +45,12 @@
   border-bottom: 1px solid var(--color-cubiculo-2);
 }
 
+/* En celulares chicos los filtros no caben: se deslizan de lado dentro de su propia caja */
 .segmentos {
   display: inline-flex;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
   padding: 3px;
   gap: 2px;
   background: var(--color-pared-2);
@@ -54,6 +58,8 @@
   border-radius: var(--radius-cubiculo);
 }
 .segmento {
+  flex: none;
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   min-height: 2.25rem;

@@ -1,2 +1,7 @@
 .pie-enlace { color: var(--color-monitor-2); text-decoration: none; transition: color 0.2s; }
 .pie-enlace:hover { color: var(--color-ambar); text-decoration: underline; }
+
+/* En pantallas táctiles cada enlace del pie tiene al menos 44 px de alto para el dedo */
+@media (pointer: coarse) {
+  .pie-enlace { display: inline-flex; align-items: center; min-height: 2.75rem; }
+}

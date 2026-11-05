@@ -58,6 +58,8 @@ export class Admin implements OnInit {
     try {
       this.resultados.set(await this.admin.buscarRawg(q));
     } catch (e) {
+      // Sin resultados viejos que confundan: la búsqueda que se ve es la que falló
+      this.resultados.set(null);
       this.avisar('error', this.mensaje(e, 'RAWG no respondió. Intenta de nuevo.'));
     } finally {
       this.buscando.set(false);

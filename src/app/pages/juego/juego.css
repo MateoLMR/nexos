@@ -83,6 +83,7 @@
   cursor: pointer;
 }
 .boton-sonido:hover { color: var(--color-ambar); }
+@media (pointer: coarse) { .boton-sonido { min-height: 2.75rem; padding-inline: 0.9rem; } }
 .miniatura {
   position: relative;
   flex: 0 0 auto;

@@ -4,8 +4,9 @@ import { filter, Subscription } from 'rxjs';
 import type * as THREE_NS from 'three';
 import { crearTaller, suave, Taller, Three } from './bit-base';
 import { colgar, moverMano, ponerMano } from './bit-mano';
+import { ANCHO_MINIMO, bitPermitido, CONSULTA_PUNTERO, escalaBit, escalaDuelo, MEDIO_ALTO_MUNDO } from './bit-medidas';
 import { Accesorios, Bit, crearAccesorios, crearBit, fusionar } from './bit-modelo';
-import { dibujarVisor, ModoVisor } from './bit-visor';
+import { DatosVisor, dibujarVisor, ModoVisor } from './bit-visor';
 
 /** Orden de las páginas en el menú: Bit viaja a la derecha o a la izquierda según este orden */
 const ORDEN_RUTAS: [RegExp, number][] = [
@@ -16,7 +17,9 @@ type Rutina = (typeof RUTINAS)[number];
 type Estado = Rutina | 'seguir' | 'dormir' | 'viaje' | 'tele' | 'precios' | 'mejor-precio' | 'vivo' | 'dudas' | 'juego' | 'post' | 'comparar';
 const INTERACTIVO = 'a, button, input, textarea, select, label, video, summary, [role="button"], [contenteditable="true"]';
 
-interface Chispa { m: THREE_NS.Mesh; vx: number; vy: number; vida: number; g: number }
+/** Chispa del pool: se arma una vez al abrir y se recicla; mientras Bit se mueve no se crean ni se liberan materiales */
+interface Chispa { m: THREE_NS.Mesh; mat: THREE_NS.MeshBasicMaterial; vx: number; vy: number; vida: number; g: number; activa: boolean }
+const TAM_POOL = 96;
 /** Un espacio libre de la página donde Bit hace su acción sin quedar detrás de tarjetas o textos */
 interface Hueco { x: number; y: number; sc: number; tapado: number; ok: boolean; clave: string; ref: unknown; hasta: number; d: number }
 // Etiquetas que siempre tapan con toda su caja
@@ -57,17 +60,25 @@ export class BitTendero implements AfterViewInit, OnDestroy {
   private acc!: Accesorios;
   private crearRival?: () => Bit;
   private chispas: Chispa[] = [];
-  private geoChispa?: THREE_NS.PlaneGeometry;
+  private activas = 0;
   private rayo?: THREE_NS.Raycaster;
+  private datosVisor: DatosVisor = {};
+
+  // Equipo: Bit solo vive en portátiles y PC; si la ventana se achica o cambia el puntero, se esconde y se pausa
+  private mqPuntero?: MediaQueryList;
+  private mqReducido?: MediaQueryList;
+  private mqAncho?: MediaQueryList;
+  private iniciado = false;
+  private iniciando = false;
+  private pausado = false;
 
   // Mundo visible y límites
-  private mw = 4; private mh = 3; private tope = 0; private escala = 0.9; private movil = false;
+  private mw = 4; private mh = 3; private tope = 0; private escala = 0.9;
   // Estado
   private reloj = 0; private ultimo = 0;
   // mov: segundos desde que se movió el mouse (arranca en 5: quieto, pero no dormido)
   private ptr = { x: 0, y: 0, sx: 0, sy: 0, mov: 5, dentro: false };
   private objetivo: Element | null = null;
-  private objetivoToque = 0;
   private video: HTMLVideoElement | null = null;
   private rutina: Rutina = 'pasear'; private rutinaHasta = 4; private iRutina = 0; private inicioRutina = 0;
   private saludoHasta = 2.6; private exprHasta = 0; private expr: ModoVisor = 'normal';
@@ -85,10 +96,61 @@ export class BitTendero implements AfterViewInit, OnDestroy {
   private renglones = new Map<Element, DOMRect[]>();
 
   ngAfterViewInit() {
-    if (!this.puedeAnimar()) return;
-    const arrancar = () => { if (this.vivo) this.iniciar().catch((e) => console.warn('Bit no pudo abrir el local', e)); };
-    if ('requestIdleCallback' in window) (window as any).requestIdleCallback(arrancar, { timeout: 2500 });
-    else setTimeout(arrancar, 800);
+    if (typeof window === 'undefined' || typeof matchMedia !== 'function') return;
+    if (!('WebGLRenderingContext' in window)) return;
+    this.mqPuntero = matchMedia(CONSULTA_PUNTERO);
+    this.mqReducido = matchMedia('(prefers-reduced-motion: reduce)');
+    // El ancho también se vigila con matchMedia: avisa siempre que se cruza el límite, aunque no llegue un "resize"
+    this.mqAncho = matchMedia(`(min-width: ${ANCHO_MINIMO}px)`);
+    const alCambiar = () => this.revisarEquipo();
+    const consultas = [this.mqPuntero, this.mqReducido, this.mqAncho];
+    consultas.forEach((q) => q.addEventListener('change', alCambiar));
+    addEventListener('resize', alCambiar);
+    this.limpiar.push(() => {
+      consultas.forEach((q) => q.removeEventListener('change', alCambiar));
+      removeEventListener('resize', alCambiar);
+    });
+    this.revisarEquipo();
+  }
+
+  /** En un celular o tablet Bit ni se descarga; si la ventana de un PC se achica, se esconde y se pausa */
+  private permitido(): boolean {
+    const nav = navigator as any;
+    return bitPermitido({
+      ancho: this.mqAncho?.matches ? Math.max(innerWidth, ANCHO_MINIMO) : Math.min(innerWidth, ANCHO_MINIMO - 1), punteroFino: !!this.mqPuntero?.matches, reducido: !!this.mqReducido?.matches,
+      ahorroDatos: !!nav.connection?.saveData, nucleos: nav.hardwareConcurrency,
+    });
+  }
+
+  private revisarEquipo() {
+    if (!this.vivo) return;
+    const si = this.permitido();
+    if (si && !this.iniciado && !this.iniciando) {
+      this.iniciando = true;
+      const arrancar = () => {
+        if (!this.vivo) return;
+        this.iniciar().catch((e) => console.warn('Bit no pudo abrir el local', e)).finally(() => (this.iniciando = false));
+      };
+      if ('requestIdleCallback' in window) (window as any).requestIdleCallback(arrancar, { timeout: 2500 });
+      else setTimeout(arrancar, 800);
+      return;
+    }
+    if (!this.iniciado) return;
+    const lienzo = this.lienzo().nativeElement;
+    if (!si && !this.pausado) {
+      this.pausado = true;
+      cancelAnimationFrame(this.cuadro); this.cuadro = 0;
+      lienzo.classList.remove('listo');
+    } else if (si && this.pausado) {
+      this.pausado = false;
+      this.medir();
+      lienzo.classList.add('listo');
+      this.reanudar();
+    }
+  }
+
+  private reanudar() {
+    if (this.vivo && !this.pausado && !this.cuadro && !document.hidden && this.iniciado) { this.ultimo = performance.now(); this.bucle(); }
   }
 
   ngOnDestroy() {
@@ -104,15 +166,6 @@ export class BitTendero implements AfterViewInit, OnDestroy {
     this.renderer?.dispose();
   }
 
-  private puedeAnimar(): boolean {
-    if (typeof window === 'undefined') return false;
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
-    const nav = navigator as any;
-    if (nav.connection?.saveData) return false;
-    if (nav.hardwareConcurrency && nav.hardwareConcurrency < 4) return false;
-    try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; }
-  }
-
   private async iniciar() {
     const [T, { RoundedBoxGeometry }, { mergeGeometries }] = await Promise.all([
       import('three'),
@@ -122,9 +175,8 @@ export class BitTendero implements AfterViewInit, OnDestroy {
     if (!this.vivo) return;
     this.T = T;
     const lienzo = this.lienzo().nativeElement;
-    this.movil = innerWidth < 640;
-    const renderer = new T.WebGLRenderer({ canvas: lienzo, alpha: true, antialias: !this.movil, powerPreference: 'low-power' });
-    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, this.movil ? 1 : 1.5));
+    const renderer = new T.WebGLRenderer({ canvas: lienzo, alpha: true, antialias: true, powerPreference: 'low-power' });
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
     renderer.setClearColor(0x000000, 0);
     this.renderer = renderer;
     const escena = new T.Scene();
@@ -135,7 +187,15 @@ export class BitTendero implements AfterViewInit, OnDestroy {
     const sol = new T.DirectionalLight(0xffffff, 2.3); sol.position.set(-3, 5, 6); escena.add(sol);
     const contra = new T.DirectionalLight(0x9a76f0, 2.5); contra.position.set(4, 1, -5); escena.add(contra);
     this.rayo = new T.Raycaster();
-    this.geoChispa = new T.PlaneGeometry(1, 1);
+    // Pool de chispas: todas comparten la geometría y cada una guarda su material para siempre
+    const geoChispa = new T.PlaneGeometry(1, 1);
+    for (let i = 0; i < TAM_POOL; i++) {
+      const mat = new T.MeshBasicMaterial({ color: '#ffffff', transparent: true, depthWrite: false });
+      const m = new T.Mesh(geoChispa, mat);
+      m.visible = false;
+      escena.add(m);
+      this.chispas.push({ m, mat, vx: 0, vy: 0, vida: 0, g: 0, activa: false });
+    }
 
     const taller = crearTaller(T);
     this.taller = taller;
@@ -156,6 +216,11 @@ export class BitTendero implements AfterViewInit, OnDestroy {
     this.medir();
     this.sAct = this.escala;
     this.bit.x = -this.mw * 0.4; this.bit.y = 0;
+
+    // Shaders y texturas listos antes del primer cuadro: así la primera voltereta o el primer "puf" no dan tirón
+    await this.precompilar();
+    if (!this.vivo) return;
+
     // El fondo del body se vuelve transparente para que Bit, que va detrás, se vea (el html ya tiene el color de pared)
     const fondo = document.body.style.background;
     document.body.style.background = 'transparent';
@@ -163,9 +228,25 @@ export class BitTendero implements AfterViewInit, OnDestroy {
     this.escuchar();
     // Para pruebas: localStorage 'bit-depurar' expone el estado en window.__bit
     try { if (localStorage.getItem('bit-depurar')) (window as any).__bit = { c: this, T }; } catch { /* sin storage */ }
+    this.iniciado = true;
+    // Si mientras cargaba la ventana dejó de ser de PC, queda en pausa hasta que vuelva
+    if (!this.permitido()) { this.pausado = true; return; }
     lienzo.classList.add('listo');
     this.ultimo = performance.now();
     this.bucle();
+  }
+
+  /** Compila todos los materiales (también los de accesorios y chispas, que empiezan ocultos) y sube sus texturas */
+  private async precompilar() {
+    const r = this.renderer!, escena = this.escena!, ocultos: THREE_NS.Object3D[] = [];
+    escena.traverse((o) => { if (!o.visible) { ocultos.push(o); o.visible = true; } });
+    try {
+      await (r.compileAsync ? r.compileAsync(escena, this.camara!) : Promise.resolve(r.compile(escena, this.camara!)));
+      escena.traverse((o: any) => {
+        (Array.isArray(o.material) ? o.material : o.material ? [o.material] : []).forEach((m: any) => { if (m.map) r.initTexture(m.map); });
+      });
+    } catch { /* si falla, se compila al primer uso como antes */ }
+    ocultos.forEach((o) => (o.visible = false));
   }
 
   // ---------- medidas y límites ----------
@@ -174,12 +255,16 @@ export class BitTendero implements AfterViewInit, OnDestroy {
     this.renderer!.setSize(w, h, false);
     this.camara!.aspect = w / h;
     this.camara!.updateProjectionMatrix();
-    this.mh = Math.tan((15 * Math.PI) / 180) * 14;
+    this.mh = MEDIO_ALTO_MUNDO;
     this.mw = this.mh * this.camara!.aspect;
-    this.movil = w < 640;
-    this.escala = Math.min(0.9, Math.max(0.5, this.mw / 5.4));
+    // El tamaño en píxeles depende del equipo: más grande en un monitor que en un portátil
+    this.escala = escalaBit(w, h);
+    this.medirTope();
   }
-  /** Borde de abajo del header en coordenadas del mundo: Bit no se mete debajo de la barra */
+  /**
+   * Borde de abajo del header en coordenadas del mundo: Bit no se mete debajo de la barra.
+   * Se mide al redimensionar, al hacer scroll y al cambiar de página, no en cada cuadro.
+   */
   private medirTope() {
     const header = document.querySelector('app-navbar header');
     const px = Math.max(0, header?.getBoundingClientRect().bottom ?? 0);
@@ -257,15 +342,15 @@ export class BitTendero implements AfterViewInit, OnDestroy {
    * El espacio libre más cercano al ancla: prefiere la misma altura y su tamaño normal, y se encoge si el margen es angosto.
    * Si no hay ninguno limpio, el lugar de los bordes donde quede menos tapado. Se limita a unos milisegundos.
    */
-  private buscarHueco(ax: number, ay: number, evitar?: { x: number; y: number; r: number }) {
+  private buscarHueco(ax: number, ay: number, evitar?: { x: number; y: number; r: number }, base = this.escala) {
     this.limpiarCache();
     const t0 = performance.now();
     const lejos = (x: number, y: number) => !!evitar && Math.hypot(x - evitar.x, y - evitar.y) < evitar.r;
     const cand: { x: number; y: number; sc: number; p: number }[] = [];
-    // En celular no se encoge por debajo de un tamaño que aún se lea
-    const minimo = Math.min(this.escala, 0.4);
+    // No se encoge por debajo de un tamaño que aún se lea
+    const minimo = Math.min(base, 0.4);
     for (const f of [1, 0.85, 0.7, 0.58]) {
-      const sc = Math.max(minimo, this.escala * f), L = this.limites(sc);
+      const sc = Math.max(minimo, base * f), L = this.limites(sc);
       if (L.y1 < L.y0 || L.x1 < L.x0) continue;
       for (let i = 0; i <= 14; i++) for (let j = 0; j <= 8; j++) {
         const x = L.x0 + ((L.x1 - L.x0) * i) / 14, y = L.y0 + ((L.y1 - L.y0) * j) / 8;
@@ -282,7 +367,7 @@ export class BitTendero implements AfterViewInit, OnDestroy {
     // Todo cabe en ~7 ms para no saltarse un cuadro de 60 fps
     const bordes: { x: number; y: number; sc: number; d: number }[] = [];
     for (const f of [0.7, 0.58]) {
-      const sc = Math.max(minimo, this.escala * f), L = this.limites(sc);
+      const sc = Math.max(minimo, base * f), L = this.limites(sc);
       if (L.y1 < L.y0) continue;
       for (const x of [L.x0, L.x1]) for (let j = 0; j <= 6; j++) {
         const y = L.y0 + ((L.y1 - L.y0) * j) / 6;
@@ -300,18 +385,18 @@ export class BitTendero implements AfterViewInit, OnDestroy {
     return mejor;
   }
   /** Mantiene el hueco elegido mientras siga libre y cerca del ancla; si no, busca otro (como mucho cada 0,7 s) */
-  private huecoPara(actual: Hueco | null, clave: string, ref: unknown, ax: number, ay: number, evitar?: { x: number; y: number; r: number }): Hueco {
-    const h = actual, mismo = !!h && h.clave === clave && h.ref === ref;
+  private huecoPara(actual: Hueco | null, clave: string, ref: unknown, ax: number, ay: number, evitar?: { x: number; y: number; r: number }, base = this.escala): Hueco {
+    const h = actual, mismo = !!h && h.clave === clave && h.ref === ref && h.sc <= base + 1e-6;
     if (h && mismo && this.reloj < h.hasta) return h;
     if (h && mismo && h.ok && h.tapado === 0 && Math.hypot(h.x - ax, h.y - ay) < h.d + 0.25 * this.mw) {
       this.limpiarCache();
       if (this.tapado(h.x, h.y, h.sc) === 0) { h.hasta = this.reloj + 0.7; return h; }
     }
-    const n = this.buscarHueco(ax, ay, evitar);
+    const n = this.buscarHueco(ax, ay, evitar, base);
     // Sin hueco limpio se vuelve a intentar con más calma
     const espera = n && n.tapado === 0 ? 0.7 : 1.5;
     return n ? { ...n, ok: true, clave, ref, hasta: this.reloj + espera, d: Math.hypot(n.x - ax, n.y - ay) }
-      : { x: 0, y: 0, sc: this.escala, tapado: 1, ok: false, clave, ref, hasta: this.reloj + espera, d: 0 };
+      : { x: 0, y: 0, sc: base, tapado: 1, ok: false, clave, ref, hasta: this.reloj + espera, d: 0 };
   }
 
   // ---------- eventos ----------
@@ -323,24 +408,31 @@ export class BitTendero implements AfterViewInit, OnDestroy {
       if (e.pointerType === 'mouse') this.objetivo = (e.target as Element | null)?.closest?.('[data-bit]') ?? null;
     };
     const alSalir = (e: PointerEvent) => { if (!e.relatedTarget) { this.ptr.dentro = false; this.objetivo = null; } };
+    const ndc = new this.T.Vector2();
     const alTocar = (e: PointerEvent) => {
       const el = e.target as Element | null;
-      // En pantallas táctiles, tocar un elemento marcado cuenta como "pasar por encima" un rato
-      if (e.pointerType !== 'mouse') { this.objetivo = el?.closest?.('[data-bit]') ?? null; this.objetivoToque = this.reloj + 3.5; }
-      if (el?.closest?.(INTERACTIVO) || !this.rayo) return;
-      const ndc = new this.T.Vector2((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+      if (this.pausado || el?.closest?.(INTERACTIVO) || !this.rayo) return;
+      ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
       this.rayo.setFromCamera(ndc, this.camara!);
       if (this.rayo.intersectObject(this.bit.raiz, true).length) this.celebrar();
     };
     const alRedimensionar = () => this.medir();
-    const alCambiarPestana = () => { if (!document.hidden && this.vivo && !this.cuadro) { this.ultimo = performance.now(); this.bucle(); } };
+    // El header es sticky: su borde solo cambia con el scroll cerca del inicio de la página
+    let topePendiente = false;
+    const alScroll = () => {
+      if (topePendiente) return;
+      topePendiente = true;
+      requestAnimationFrame(() => { topePendiente = false; this.medirTope(); });
+    };
+    const alCambiarPestana = () => { if (!document.hidden) this.reanudar(); };
     const alPlay = (e: Event) => { if (e.target instanceof HTMLVideoElement) this.video = e.target; };
     const alPausa = (e: Event) => { if (e.target === this.video) this.video = null; };
-    const alEntrar = () => this.celebrar();
+    const alEntrar = () => { if (!this.pausado) this.celebrar(); };
     addEventListener('pointermove', alMover, { passive: true });
     document.addEventListener('pointerout', alSalir, { passive: true });
     addEventListener('pointerdown', alTocar, { passive: true });
     addEventListener('resize', alRedimensionar);
+    addEventListener('scroll', alScroll, { passive: true });
     document.addEventListener('visibilitychange', alCambiarPestana);
     document.addEventListener('play', alPlay, true);
     document.addEventListener('pause', alPausa, true);
@@ -351,6 +443,7 @@ export class BitTendero implements AfterViewInit, OnDestroy {
       document.removeEventListener('pointerout', alSalir);
       removeEventListener('pointerdown', alTocar);
       removeEventListener('resize', alRedimensionar);
+      removeEventListener('scroll', alScroll);
       document.removeEventListener('visibilitychange', alCambiarPestana);
       document.removeEventListener('play', alPlay, true);
       document.removeEventListener('pause', alPausa, true);
@@ -364,6 +457,7 @@ export class BitTendero implements AfterViewInit, OnDestroy {
       this.rutaAnterior = nueva;
       this.objetivo = null; this.video = null;
       if (dir) this.viaje = { fase: 'salir', dir, desde: this.reloj };
+      requestAnimationFrame(() => this.medirTope());
     });
   }
 
@@ -375,29 +469,35 @@ export class BitTendero implements AfterViewInit, OnDestroy {
   private celebrar() {
     this.bit.vgiro = 20;
     this.expr = 'amor'; this.exprHasta = this.reloj + 1.6;
-    this.chispazo(this.bit.raiz.position, ['#ff6b6b', '#9a76f0', '#ffb020'], 16, 0.09);
+    const p = this.bit.raiz.position;
+    this.chispazo(p.x, p.y, ['#ff6b6b', '#9a76f0', '#ffb020'], 16, 0.09);
   }
 
-  // ---------- partículas ----------
-  private chispazo(pos: THREE_NS.Vector3, colores: string[], n: number, tam: number, fuerza = 1) {
-    const T = this.T;
-    for (let i = 0; i < n && this.chispas.length < 90; i++) {
-      const m = new T.Mesh(this.geoChispa!, new T.MeshBasicMaterial({ color: colores[i % colores.length], transparent: true }));
-      m.scale.setScalar(tam * this.escala * 1.1);
-      m.position.set(pos.x, pos.y, 0.6);
-      this.escena!.add(m);
-      const a = Math.random() * Math.PI * 2, v = (1.8 + Math.random() * 3) * fuerza * this.escala;
-      this.chispas.push({ m, vx: Math.cos(a) * v, vy: Math.sin(a) * v + 1.2, vida: 1, g: 7 });
+  // ---------- partículas (pool fijo) ----------
+  private tomarChispa(): Chispa | null {
+    if (this.activas >= this.chispas.length) return null;
+    for (const c of this.chispas) if (!c.activa) { c.activa = true; c.m.visible = true; this.activas++; return c; }
+    return null;
+  }
+  private chispazo(x: number, y: number, colores: string[], n: number, tam: number, fuerza = 1) {
+    const s = this.sAct;
+    for (let i = 0; i < n; i++) {
+      const c = this.tomarChispa();
+      if (!c) return;
+      c.mat.color.set(colores[i % colores.length]); c.mat.opacity = 1;
+      c.m.scale.setScalar(tam * s * 1.1); c.m.position.set(x, y, 0.6); c.m.rotation.z = 0;
+      const a = Math.random() * Math.PI * 2, v = (1.8 + Math.random() * 3) * fuerza * s;
+      c.vx = Math.cos(a) * v; c.vy = Math.sin(a) * v + 1.2; c.vida = 1; c.g = 7;
     }
   }
   private estela(pos: THREE_NS.Vector3, dir: number) {
-    if (this.chispas.length >= 90) return;
-    const T = this.T;
-    const m = new T.Mesh(this.geoChispa!, new T.MeshBasicMaterial({ color: Math.random() > 0.5 ? '#e8eeff' : '#9a76f0', transparent: true, opacity: 0.8 }));
-    m.scale.set((0.5 + Math.random() * 0.4) * this.escala, 0.03, 1);
-    m.position.set(pos.x - dir * 0.6 * this.escala, pos.y + (Math.random() - 0.5) * 0.9 * this.escala, 0.3);
-    this.escena!.add(m);
-    this.chispas.push({ m, vx: -dir * 2, vy: 0, vida: 0.6, g: 0 });
+    const c = this.tomarChispa();
+    if (!c) return;
+    const s = this.sAct;
+    c.mat.color.set(Math.random() > 0.5 ? '#e8eeff' : '#9a76f0'); c.mat.opacity = 0.8;
+    c.m.scale.set((0.5 + Math.random() * 0.4) * s, 0.03, 1); c.m.rotation.z = 0;
+    c.m.position.set(pos.x - dir * 0.6 * s, pos.y + (Math.random() - 0.5) * 0.9 * s, 0.3);
+    c.vx = -dir * 2; c.vy = 0; c.vida = 0.6; c.g = 0;
   }
 
   // ---------- física ----------
@@ -422,11 +522,11 @@ export class BitTendero implements AfterViewInit, OnDestroy {
   // ---------- bucle ----------
   private bucle = () => {
     this.cuadro = 0;
-    if (!this.vivo || document.hidden) return; // pestaña oculta: no gasta batería
+    if (!this.vivo || this.pausado || document.hidden) return; // pestaña oculta o ventana de celular: no gasta batería
     this.cuadro = requestAnimationFrame(this.bucle);
     const ahora = performance.now();
     const dt = Math.min((ahora - this.ultimo) / 1000, 0.05);
-    const ocupado = this.ptr.mov < 3 || !!this.objetivo || !!this.viaje.fase || this.chispas.length > 0 || this.rivalActivo || this.video;
+    const ocupado = this.ptr.mov < 3 || !!this.objetivo || !!this.viaje.fase || this.activas > 0 || this.rivalActivo || this.video;
     if (!ocupado && dt < 1 / 30 - 0.002) return; // en reposo basta con 30 fps
     this.ultimo = ahora;
     this.reloj += dt;
@@ -439,9 +539,7 @@ export class BitTendero implements AfterViewInit, OnDestroy {
     ptr.mov += dt;
     const kp = suave(dt, 8);
     ptr.sx += (ptr.x - ptr.sx) * kp; ptr.sy += (ptr.y - ptr.sy) * kp;
-    this.medirTope();
     const L = this.limites(s);
-    if (this.objetivoToque && this.reloj > this.objetivoToque) { this.objetivo = null; this.objetivoToque = 0; }
     if (this.objetivo && !this.objetivo.isConnected) this.objetivo = null;
 
     if (this.reloj > this.rutinaHasta) {
@@ -454,7 +552,7 @@ export class BitTendero implements AfterViewInit, OnDestroy {
     const card = this.objetivo ? this.aMundo(this.objetivo) : null;
     const vid = this.video && !this.video.paused ? this.aMundo(this.video) : null;
     const estado: Estado = this.viaje.fase ? 'viaje' : marca && card?.visible ? marca : vid?.visible ? 'tele' : ptr.mov > 16 ? 'dormir' : siguiendo ? 'seguir' : this.rutina;
-    const enVivo = estado === 'vivo' && !!card && !this.movil;
+    const enVivo = estado === 'vivo' && !!card;
     this.estado = estado;
 
     // ----- espacio seguro: cuando hace algo, Bit se aparta a un hueco libre para que se vea; libre o siguiéndote va donde quiera -----
@@ -469,11 +567,14 @@ export class BitTendero implements AfterViewInit, OnDestroy {
     }
     let rt: Hueco | null = null;
     if (enVivo && h) {
+      // El rival busca un hueco de su mismo tamaño (nunca más grande que Bit)
       const hacia = h.x < 0 ? 1 : -1;
-      this.huecoR = this.huecoPara(this.huecoR, 'rival', this.objetivo, h.x + hacia * 2.8 * h.sc, h.y, { x: h.x, y: h.y, r: 2.4 * h.sc });
+      this.huecoR = this.huecoPara(this.huecoR, 'rival', this.objetivo, h.x + hacia * 2.8 * h.sc, h.y, { x: h.x, y: h.y, r: 2.4 * h.sc }, h.sc);
       rt = this.huecoR.ok ? this.huecoR : null;
     }
-    this.sAct += ((h ? h.sc : s) - this.sAct) * suave(dt, 3);
+    // En el duelo los dos van del tamaño del hueco más pequeño; el rival usa esta misma escala
+    const meta = enVivo ? escalaDuelo(s, h?.sc, rt?.sc) : h ? h.sc : s;
+    this.sAct += (meta - this.sAct) * suave(dt, 3);
 
     // ----- a dónde va -----
     let tx = bit.x, ty = bit.y, mirar = 0, rig = 3.2, am = 2.8, estira = 1;
@@ -485,9 +586,9 @@ export class BitTendero implements AfterViewInit, OnDestroy {
         if (Math.random() < 0.6) this.estela(bit.raiz.position, this.viaje.dir);
         if (Math.abs(bit.x - borde) < 0.15 || this.reloj - this.viaje.desde > 1.1) {
           // Sale por un borde con un "puf" y entra por el otro
-          this.chispazo(bit.raiz.position, ['#9a76f0', '#e8eeff', '#ffb020'], 18, 0.1, 0.8);
+          this.chispazo(bit.raiz.position.x, bit.raiz.position.y, ['#9a76f0', '#e8eeff', '#ffb020'], 18, 0.1, 0.8);
           bit.x = this.viaje.dir > 0 ? L.x0 : L.x1; bit.vx = this.viaje.dir * 7; bit.pop = 0.2; bit.vpop = 0;
-          this.chispazo(new this.T.Vector3(bit.x, bit.y, 0), ['#9a76f0', '#e8eeff', '#ffb020'], 18, 0.1, 0.8);
+          this.chispazo(bit.x, bit.y, ['#9a76f0', '#e8eeff', '#ffb020'], 18, 0.1, 0.8);
           this.viaje = { fase: 'entrar', dir: this.viaje.dir, desde: this.reloj };
         }
       } else {
@@ -568,7 +669,7 @@ export class BitTendero implements AfterViewInit, OnDestroy {
       } else if (fTiq < 6.4) {
         // vuela hacia ti
         tq.visible = true; const v = (fTiq - 5.6) / 0.8; tq.position.z = 1 + v * 1.4; tq.scale.setScalar(1 + v * 0.6);
-        if (!this.tiqueteVolo) { this.tiqueteVolo = true; this.chispazo(bit.raiz.position.clone().add(new this.T.Vector3(0.4 * s, 0, 0)), ['#ffb020', '#efe3c6'], 14, 0.09); }
+        if (!this.tiqueteVolo) { this.tiqueteVolo = true; this.chispazo(bit.raiz.position.x + 0.4 * this.sAct, bit.raiz.position.y, ['#ffb020', '#efe3c6'], 14, 0.09); }
         ponerMano(mD, 0.86, 0.42, 0.2, -0.2 + Math.sin(t * 10) * 0.4, 'abierta', dt, 16, 0);
       } else { this.tiqueteVolo = false; colgar(mD, 0.82, -0.3 + b2, 0.18, dt); }
       colgar(mI, -0.82, -0.3 + b1, 0.18, dt);
@@ -605,37 +706,41 @@ export class BitTendero implements AfterViewInit, OnDestroy {
 
     // ----- visor -----
     if (t > this.parpadeo + 0.12) this.parpadeo = t + 2.5 + Math.random() * 2.5;
-    const goles = this.objetivo?.getAttribute('data-bit-goles') ?? '';
-    const [gA, gB] = goles.split('-');
-    const ganador = this.objetivo?.getAttribute('data-bit-ganador');
+    const goles = enVivo ? this.objetivo?.getAttribute('data-bit-goles') ?? '' : '';
+    const guion = goles.indexOf('-');
+    const gA = guion < 0 ? goles : goles.slice(0, guion), gB = guion < 0 ? '' : goles.slice(guion + 1);
+    const ganador = estado === 'comparar' ? this.objetivo?.getAttribute('data-bit-ganador') : null;
     const modo: ModoVisor = t < 0.7 ? (Math.sin(t * 45) > 0 ? 'normal' : 'apagado')
       : t < this.exprHasta ? this.expr
       : enVivo ? 'vivo' : fTiq < 6.4 ? 'reloj' : estado === 'dormir' ? 'dormido' : estado === 'precios' || estado === 'mejor-precio' ? 'wow'
       : estado === 'juego' ? 'precio' : estado === 'post' ? 'escribe' : estado === 'limpiar' ? 'limpia'
       : estado === 'comparar' ? (ganador === 'a' ? 'flecha-izq' : ganador === 'b' ? 'flecha-der' : 'igual')
       : estado === 'dudas' || estado === 'tele' || estado === 'viaje' || sorbo > 0.3 ? 'feliz' : 'normal';
-    const datos = {
-      mx: Math.round(Math.max(-2, Math.min(2, (ptr.sx - bit.x) * 0.6))), my: Math.round(Math.max(-2, Math.min(2, -(ptr.sy - bit.y) * 0.6))),
-      cerrado: t > this.parpadeo, goles: gA, color: '#ffb020', descuento: this.objetivo?.getAttribute('data-bit-descuento') ?? '0',
-    };
+    // Un solo objeto de datos que se reutiliza: nada de basura por cuadro
+    const datos = this.datosVisor;
+    datos.mx = Math.round(Math.max(-2, Math.min(2, (ptr.sx - bit.x) * 0.6)));
+    datos.my = Math.round(Math.max(-2, Math.min(2, -(ptr.sy - bit.y) * 0.6)));
+    datos.cerrado = t > this.parpadeo; datos.goles = gA; datos.color = '#ffb020';
+    datos.descuento = estado === 'juego' ? this.objetivo?.getAttribute('data-bit-descuento') ?? '0' : '0';
     if (dibujarVisor(bit.visor.px, modo, t, datos, bit.visor.ultima)) bit.visor.t.needsUpdate = true;
     if (this.rival?.raiz.visible && dibujarVisor(this.rival.visor.px, 'vivo', t, { goles: gB, color: '#3ddc84' }, this.rival.visor.ultima)) this.rival.visor.t.needsUpdate = true;
 
     // ----- chispas -----
-    for (let i = this.chispas.length - 1; i >= 0; i--) {
-      const c = this.chispas[i];
+    if (this.activas) for (const c of this.chispas) {
+      if (!c.activa) continue;
       c.vy -= c.g * dt; c.m.position.x += c.vx * dt; c.m.position.y += c.vy * dt;
       if (c.g) c.m.rotation.z += dt * 6;
       c.vida -= dt * 1.3;
-      (c.m.material as THREE_NS.MeshBasicMaterial).opacity = Math.max(c.vida, 0);
-      if (c.vida <= 0) { this.escena!.remove(c.m); (c.m.material as THREE_NS.Material).dispose(); this.chispas.splice(i, 1); }
+      c.mat.opacity = Math.max(c.vida, 0);
+      if (c.vida <= 0) { c.activa = false; c.m.visible = false; this.activas--; }
     }
   }
 
   /** El rival aparece de la nada con un "puf" de píxeles y se planta frente a Bit con un "VS" en medio */
   private animarRival(enVivo: boolean, dt: number, s: number, L: ReturnType<BitTendero['limites']>, rt: Hueco | null) {
-    // Con espacio libre, el rival aparece en su propio hueco; si no, abajo a la derecha como antes
-    const sr = (rt ? rt.sc : s) * 0.92, Lr = this.limites(sr);
+    // Con espacio libre, el rival aparece en su propio hueco; si no, abajo a la derecha como antes.
+    // Va exactamente del tamaño de Bit: uno nunca se ve más grande que el otro
+    const sr = this.sAct, Lr = this.limites(sr);
     const mx = rt ? rt.x : this.mw * 0.45, my = rt ? rt.y : Lr.y0;
     if (enVivo && !this.rival) this.rival = this.crearRival!();
     const r = this.rival;
@@ -643,9 +748,9 @@ export class BitTendero implements AfterViewInit, OnDestroy {
     if (enVivo && !this.rivalActivo) {
       this.rivalActivo = true;
       r.x = mx; r.y = my; r.vx = r.vy = 0; r.pop = 0; r.vpop = 0; r.raiz.visible = true;
-      this.chispazo(new this.T.Vector3(r.x, r.y, 0), ['#3ddc84', '#ff6b6b', '#e8eeff', '#9a76f0'], 26, 0.12);
+      this.chispazo(r.x, r.y, ['#3ddc84', '#ff6b6b', '#e8eeff', '#9a76f0'], 26, 0.12);
     }
-    if (!enVivo && this.rivalActivo) { this.rivalActivo = false; this.chispazo(new this.T.Vector3(r.x, r.y, 0), ['#3ddc84', '#ff6b6b', '#e8eeff'], 20, 0.12); }
+    if (!enVivo && this.rivalActivo) { this.rivalActivo = false; this.chispazo(r.x, r.y, ['#3ddc84', '#ff6b6b', '#e8eeff'], 20, 0.12); }
     r.vpop += ((this.rivalActivo ? 1 : 0) - r.pop) * 220 * dt - r.vpop * (this.rivalActivo ? 13 : 30) * dt;
     r.pop = Math.max(0, r.pop + r.vpop * dt);
     if (!this.rivalActivo && r.pop < 0.02) { r.pop = 0; r.raiz.visible = false; }
@@ -662,6 +767,6 @@ export class BitTendero implements AfterViewInit, OnDestroy {
     vs.visible = this.rivalActivo && r.pop > 0.8;
     // el "VS" va entre los dos
     vs.position.set((this.bit.x + r.x) / 2, (rt ? (this.bit.y + r.y) / 2 : L.y0) + Math.sin(this.reloj * 6) * 0.05, 0.5);
-    vs.scale.setScalar(s * (1 + Math.max(0, Math.sin(this.reloj * 6)) * 0.12));
+    vs.scale.setScalar(sr * (1 + Math.max(0, Math.sin(this.reloj * 6)) * 0.12));
   }
 }
