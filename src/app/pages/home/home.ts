@@ -4,7 +4,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { of, catchError, Subscription, switchMap, timer } from 'rxjs';
 import { gsap } from 'gsap';
 import { TextPlugin } from 'gsap/TextPlugin';
-import { JuegosService, Juego, RecienLlegado } from '../../core/services/juegos';
+import { JuegosService, Juego, RecienLlegado, enlaceLlegado, fuenteLlegado } from '../../core/services/juegos';
 import { DetalleJuegosService } from '../../core/services/detalle-juegos';
 import { PaisService } from '../../core/services/pais';
 import { ForumService, Post } from '../../core/services/forum';
@@ -67,6 +67,9 @@ export class Home implements OnInit, AfterViewInit, OnDestroy {
 
   torneos = signal<AficheTorneo[] | null>(null); // null = cargando
   readonly logos = LOGOS;
+  // Página externa (RAWG o IGDB) de los recién llegados que aún no están en el local
+  readonly enlaceLlegado = enlaceLlegado;
+  readonly fuenteLlegado = fuenteLlegado;
 
   // Lanzamientos populares del último mes (RAWG, se renuevan cada día); null = cargando
   recienLlegados = signal<RecienLlegado[] | null>(null);

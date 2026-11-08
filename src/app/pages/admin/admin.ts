@@ -1,10 +1,19 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { AdminService, FilaAdmin, ResultadoRawg, UsoAlmacenamiento } from '../../core/services/admin';
+import { AdminService, FilaAdmin, FuenteCatalogo, ResultadoRawg, UsoAlmacenamiento } from '../../core/services/admin';
 import { Icono } from '../../shared/ui/icono';
 
-// Panel de administración: uso de almacenamiento, agregar juegos desde RAWG y la lista del catálogo.
+const CLAVE_FUENTE = 'nexos-admin-fuente';
+function fuenteGuardada(): FuenteCatalogo {
+  try {
+    const f = localStorage.getItem(CLAVE_FUENTE);
+    if (f === 'rawg' || f === 'igdb' || f === 'auto') return f;
+  } catch { /* sin storage */ }
+  return 'auto';
+}
+
+// Panel de administración: uso de almacenamiento, agregar juegos desde RAWG o IGDB y la lista del catálogo.
 @Component({
   selector: 'app-admin',
   imports: [RouterLink, Icono],
@@ -26,7 +35,10 @@ export class Admin implements OnInit {
   borrando = signal<string | null>(null);
   confirmarBorrar = signal<FilaAdmin | null>(null);
 
-  // Importar desde RAWG
+  // Importar desde RAWG o IGDB (la fuente elegida se recuerda en este navegador)
+  fuente = signal<FuenteCatalogo>(fuenteGuardada());
+  fuenteResultados = signal<'rawg' | 'igdb'>('rawg');
+  respaldo = signal(false);
   busqueda = signal('');
   resultados = signal<ResultadoRawg[] | null>(null);
   buscando = signal(false);
@@ -55,22 +67,34 @@ export class Admin implements OnInit {
     const q = this.busqueda().trim();
     if (q.length < 2) return;
     this.buscando.set(true);
+    this.respaldo.set(false);
     try {
-      this.resultados.set(await this.admin.buscarRawg(q));
+      const r = await this.admin.buscar(q, this.fuente());
+      this.resultados.set(r.resultados);
+      this.fuenteResultados.set(r.fuente);
+      this.respaldo.set(r.respaldo);
     } catch (e) {
       // Sin resultados viejos que confundan: la búsqueda que se ve es la que falló
       this.resultados.set(null);
-      this.avisar('error', this.mensaje(e, 'RAWG no respondió. Intenta de nuevo.'));
+      this.avisar('error', this.mensaje(e, 'La búsqueda no respondió. Prueba con la otra fuente.'));
     } finally {
       this.buscando.set(false);
     }
+  }
+
+  elegirFuente(f: string) {
+    const fuente = (['auto', 'rawg', 'igdb'] as const).find((x) => x === f) ?? 'auto';
+    this.fuente.set(fuente);
+    try { localStorage.setItem(CLAVE_FUENTE, fuente); } catch { /* sin storage: solo esta visita */ }
   }
 
   async importar(r: ResultadoRawg) {
     if (r.juegoId) { this.router.navigate(['/admin/juego', r.juegoId]); return; }
     this.importando.set(r.slug);
     try {
-      const { id } = await this.admin.importar(r.slug);
+      // Lo de IGDB se importa de IGDB; lo de RAWG en automático puede pasarse a IGDB si RAWG se cae justo ahora
+      const desde: FuenteCatalogo = this.fuente() === 'rawg' ? 'rawg' : r.fuente === 'igdb' ? 'igdb' : 'auto';
+      const { id } = await this.admin.importar(r.slug, desde);
       // Se abre la ficha para revisarla (valoración, pros y contras se llenan a mano)
       this.router.navigate(['/admin/juego', id], { queryParams: { nuevo: 1 } });
     } catch (e) {
@@ -97,7 +121,8 @@ export class Admin implements OnInit {
     this.actualizandoRecientes.set(true);
     try {
       const r = await this.admin.actualizarRecientes();
-      this.avisar('ok', `"Recién llegados" se actualizó con ${r.guardados} juegos.`);
+      const desde = r.fuente === 'igdb' ? ' de IGDB (RAWG no respondió)' : r.fuente === 'rawg' ? ' de RAWG' : '';
+      this.avisar('ok', `"Recién llegados" se actualizó con ${r.guardados} juegos${desde}.`);
     } catch (e) {
       this.avisar('error', this.mensaje(e, 'No se pudo actualizar "Recién llegados".'));
     } finally {

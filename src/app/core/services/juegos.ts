@@ -15,7 +15,7 @@ export interface Juego {
   creado_en?: string;
 }
 
-// Lanzamiento popular del último mes (RAWG, lo renueva el cron diario). juego_id: si ya está en Nexos.
+// Lanzamiento popular del último mes (RAWG, o IGDB si RAWG no responde; lo renueva el cron diario). juego_id: si ya está en Nexos.
 export interface RecienLlegado {
   slug: string;
   titulo: string;
@@ -24,7 +24,13 @@ export interface RecienLlegado {
   plataformas: string | null;
   generos: string | null;
   juego_id: string | null;
+  fuente?: 'rawg' | 'igdb';
+  enlace?: string; // su página en RAWG o IGDB
 }
+
+/** Página externa de un recién llegado y el nombre de su fuente (para los que aún no están en Nexos) */
+export const enlaceLlegado = (r: RecienLlegado) => r.enlace ?? `https://rawg.io/games/${r.slug}`;
+export const fuenteLlegado = (r: RecienLlegado) => (r.fuente === 'igdb' ? 'IGDB' : 'RAWG');
 
 // Los juegos vienen de la base de datos (GET /api/games). Se piden una sola vez y se guardan en caché.
 @Injectable({ providedIn: 'root' })

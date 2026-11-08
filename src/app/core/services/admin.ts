@@ -6,6 +6,9 @@ import { JuegosService } from './juegos';
 
 // Panel de administración (/api/admin/...). La API exige un token de Firebase de un correo administrador.
 
+/** De dónde salen los juegos: RAWG, IGDB o automático (RAWG y, si no responde, IGDB) */
+export type FuenteCatalogo = 'auto' | 'rawg' | 'igdb';
+
 export interface ResultadoRawg {
   slug: string;
   titulo: string;
@@ -13,6 +16,13 @@ export interface ResultadoRawg {
   lanzamiento: string | null;
   plataformas: string[];
   juegoId: string | null; // si ya está en Nexos
+  fuente: 'rawg' | 'igdb';
+}
+
+export interface BusquedaCatalogo {
+  fuente: 'rawg' | 'igdb';
+  respaldo: boolean; // true: RAWG no respondió y los resultados son de IGDB
+  resultados: ResultadoRawg[];
 }
 
 export interface FilaAdmin {
@@ -69,12 +79,13 @@ export class AdminService {
     }
   }
 
-  buscarRawg(q: string) {
-    return firstValueFrom(this.http.get<ResultadoRawg[]>(`${this.api}/rawg`, { params: { q } }));
+  buscar(q: string, fuente: FuenteCatalogo) {
+    return firstValueFrom(this.http.get<BusquedaCatalogo>(`${this.api}/buscar`, { params: { q, fuente } }));
   }
 
-  async importar(slug: string) {
-    const r = await firstValueFrom(this.http.post<{ id: string }>(`${this.api}/importar`, { slug }));
+  /** Importa desde la fuente del resultado; en automático, si RAWG está caído el proxy usa IGDB */
+  async importar(slug: string, fuente: FuenteCatalogo) {
+    const r = await firstValueFrom(this.http.post<{ id: string; fuente?: 'rawg' | 'igdb' }>(`${this.api}/importar`, { slug, fuente }));
     this.juegosSvc.limpiarCache();
     return r;
   }
@@ -103,7 +114,7 @@ export class AdminService {
   }
 
   actualizarRecientes() {
-    return firstValueFrom(this.http.post<{ guardados: number }>(`${this.api}/recientes`, {}));
+    return firstValueFrom(this.http.post<{ guardados: number; fuente?: 'rawg' | 'igdb' }>(`${this.api}/recientes`, {}));
   }
 
   /** Sube un archivo a R2 (URL firmada por la API) y devuelve su URL pública */

@@ -50,12 +50,13 @@ export interface PreciosJuego {
 }
 export interface PrecioDeHoy { juego: string; masBarato: OfertaPc | null; actualizado: string | null; }
 
-// Plataformas y tiendas (RAWG vía /api/plataformas, sin precios)
+// Plataformas y tiendas (RAWG, o IGDB si RAWG no responde, vía /api/plataformas, sin precios)
 export interface PlataformasJuego {
   juego: string;
   rawg: string | null;
   plataformas: string[];
   tiendas: { tienda: string; plataforma: string | null; url: string }[];
+  fuente?: { nombre: string; url: string };
 }
 
 // El detalle de cada juego viene de la base de datos (GET /api/games/:id), con caché por id.

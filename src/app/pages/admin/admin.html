@@ -43,18 +43,36 @@
     </div>
   </section>
 
-  <!-- ============ AGREGAR DESDE RAWG ============ -->
+  <!-- ============ AGREGAR DESDE RAWG O IGDB ============ -->
   <section class="mt-12" aria-labelledby="titulo-agregar">
     <h2 id="titulo-agregar" class="letrero text-3xl text-monitor">Agregar un juego</h2>
-    <p class="mt-2 text-monitor-2 max-w-2xl">Búscalo en RAWG: la ficha, la portada, las capturas y los precios se llenan solos. Después revisas el texto y agregas la valoración.</p>
+    <p class="mt-2 text-monitor-2 max-w-2xl">Búscalo en RAWG o en IGDB: la ficha, la portada, las capturas y los precios se llenan solos. Después revisas el texto y agregas la valoración.</p>
     <form class="mt-5 flex flex-col gap-3 sm:flex-row" (submit)="buscar($event)" role="search">
       <label for="buscar-rawg" class="sr-only">Nombre del juego</label>
       <input id="buscar-rawg" class="campo flex-1" type="search" placeholder="Hades II, Baldur's Gate 3, Balatro…" autocomplete="off"
              [value]="busqueda()" (input)="busqueda.set($any($event.target).value)" />
+      <label for="fuente-catalogo" class="sr-only">Buscar en</label>
+      <select id="fuente-catalogo" class="campo sm:w-auto" [value]="fuente()" (change)="elegirFuente($any($event.target).value)">
+        <option value="auto">Automático (RAWG, y si falla IGDB)</option>
+        <option value="rawg">Solo RAWG</option>
+        <option value="igdb">Solo IGDB</option>
+      </select>
       <button type="submit" class="boton boton-principal" [disabled]="buscando() || busqueda().trim().length < 2">
-        <app-icono nombre="search" [tam]="18" /> {{ buscando() ? 'Buscando…' : 'Buscar en RAWG' }}
+        <app-icono nombre="search" [tam]="18" /> {{ buscando() ? 'Buscando…' : 'Buscar' }}
       </button>
     </form>
+
+    @if (resultados() && respaldo()) {
+      <p class="mt-4 text-sm text-ambar" role="status">RAWG no respondió, así que estos resultados vienen de IGDB.</p>
+    }
+    @if (resultados()?.length) {
+      <p class="mt-2 text-xs text-monitor-2">
+        Datos de
+        @if (fuenteResultados() === 'igdb') { <a href="https://www.igdb.com" target="_blank" rel="noopener" class="underline hover:text-monitor">IGDB.com</a> }
+        @else { <a href="https://rawg.io" target="_blank" rel="noopener" class="underline hover:text-monitor">RAWG</a> }
+        <span class="sr-only">(se abre en otra pestaña)</span>
+      </p>
+    }
 
     @if (resultados(); as lista) {
       <ul class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">
@@ -75,7 +93,7 @@
             </div>
           </li>
         } @empty {
-          <li class="text-monitor-2">No hay resultados. Prueba con el nombre en inglés.</li>
+          <li class="text-monitor-2">No hay resultados. Prueba con el nombre en inglés o con la otra fuente.</li>
         }
       </ul>
     }

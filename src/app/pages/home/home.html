@@ -148,14 +148,14 @@
     <div class="mt-12 grid grid-cols-1 gap-6 lg:grid-cols-[1.35fr_1fr]">
       @if (recienLlegados(); as lista) {
         @for (r of lista; track r.slug; let i = $index) {
-          <!-- Si el juego ya está en Nexos abre su ficha; si no, su página en RAWG -->
+          <!-- Si el juego ya está en Nexos abre su ficha; si no, su página en RAWG o IGDB -->
           @if (r.juego_id) {
             <a class="llegado cubiculo overflow-hidden block" [class.lg:row-span-2]="i === 0" [routerLink]="['/juego', r.juego_id]">
               <ng-container *ngTemplateOutlet="tarjetaLlegado; context: { $implicit: r, i: i }" />
             </a>
           } @else {
             <a class="llegado cubiculo overflow-hidden block" [class.lg:row-span-2]="i === 0"
-               [href]="'https://rawg.io/games/' + r.slug" target="_blank" rel="noopener">
+               [href]="enlaceLlegado(r)" target="_blank" rel="noopener">
               <ng-container *ngTemplateOutlet="tarjetaLlegado; context: { $implicit: r, i: i }" />
             </a>
           }
@@ -183,7 +183,7 @@
                 @if (r.plataformas) { <p class="mt-2 text-sm text-monitor/85 max-w-prose line-clamp-2">{{ r.plataformas }}</p> }
                 <p class="mt-3 inline-flex items-center gap-1.5 text-sm font-medium" [class.text-ambar]="r.juego_id" [class.text-monitor-2]="!r.juego_id">
                   @if (r.juego_id) { Ver precios y ficha <app-icono nombre="arrow-right" [tam]="16" /> }
-                  @else { Ver en RAWG <app-icono nombre="external-link" [tam]="14" /><span class="sr-only">(se abre en otra pestaña)</span> }
+                  @else { Ver en {{ fuenteLlegado(r) }} <app-icono nombre="external-link" [tam]="14" /><span class="sr-only">(se abre en otra pestaña)</span> }
                 </p>
               </div>
             </div>

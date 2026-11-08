@@ -1,7 +1,7 @@
 import { AfterViewInit, ChangeDetectorRef, Component, computed, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgTemplateOutlet } from '@angular/common';
-import { JuegosService, Juego, RecienLlegado } from '../../core/services/juegos';
+import { JuegosService, Juego, RecienLlegado, enlaceLlegado, fuenteLlegado } from '../../core/services/juegos';
 import { DetalleJuegosService, PrecioDeHoy, Tienda } from '../../core/services/detalle-juegos';
 import { PaisService } from '../../core/services/pais';
 import { MotionService } from '../../shared/utils/motion';
@@ -17,8 +17,9 @@ const ROTACION_MS = 7000;
 export interface Cartel {
   tipo: 'lanzado' | 'barato' | 'agregado';
   etiqueta: string;
-  id: string | null;       // null: juego que aún no está en Nexos (se abre en RAWG)
+  id: string | null;       // null: juego que aún no está en Nexos (se abre en RAWG o IGDB)
   enlaceExterno: string | null;
+  fuenteExterna?: string;  // "RAWG" o "IGDB"
   titulo: string;
   descripcion: string;
   imagen: string;
@@ -172,7 +173,7 @@ export class Juegos implements OnInit, AfterViewInit, OnDestroy {
       lista.push(desdeJuego(porId.get(lanzado.juego_id)!, 'lanzado', 'Lanzamiento nuevo', (t) => `Mejor precio · ${t.nombre}`));
     } else if (lanzado?.imagen) {
       const fecha = lanzado.lanzamiento ? new Date(lanzado.lanzamiento).toLocaleDateString('es-CO', { day: 'numeric', month: 'long' }) : null;
-      lista.push({ tipo: 'lanzado', etiqueta: 'Lanzamiento nuevo', id: null, enlaceExterno: `https://rawg.io/games/${lanzado.slug}`,
+      lista.push({ tipo: 'lanzado', etiqueta: 'Lanzamiento nuevo', id: null, enlaceExterno: enlaceLlegado(lanzado), fuenteExterna: fuenteLlegado(lanzado),
         titulo: lanzado.titulo, imagen: lanzado.imagen, precio: null, rotulo: '', descuento: 0,
         descripcion: [fecha && `Salió el ${fecha}`, lanzado.generos].filter(Boolean).join(' · ') || 'De lo más jugado este mes.' });
     }

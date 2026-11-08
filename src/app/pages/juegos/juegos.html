@@ -54,7 +54,7 @@
                       <p class="font-mono text-3xl text-ambar tabular">{{ p.precio }}</p>
                     </div>
                   } @else if (!k.id) {
-                    <p class="text-sm text-monitor-2 inline-flex items-center gap-1.5">Aún no está en el local · Ver en RAWG <app-icono nombre="external-link" [tam]="14" /></p>
+                    <p class="text-sm text-monitor-2 inline-flex items-center gap-1.5">Aún no está en el local · Ver en {{ k.fuenteExterna || 'RAWG' }} <app-icono nombre="external-link" [tam]="14" /></p>
                   }
                 </div>
               }

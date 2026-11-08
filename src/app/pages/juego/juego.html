@@ -223,7 +223,7 @@
           }
           <p class="px-5 pb-4 pt-2 text-xs text-monitor-2">
             Precios: <a href="https://isthereanydeal.com" target="_blank" rel="noopener" class="underline hover:text-monitor">IsThereAnyDeal</a> y Steam
-            · Plataformas: <a [href]="plataformas()?.rawg || 'https://rawg.io'" target="_blank" rel="noopener" class="underline hover:text-monitor">RAWG</a>
+            · Plataformas: <a [href]="plataformas()?.fuente?.url || plataformas()?.rawg || 'https://rawg.io'" target="_blank" rel="noopener" class="underline hover:text-monitor">{{ plataformas()?.fuente?.nombre || 'RAWG' }}</a>
           </p>
         </section>
 
